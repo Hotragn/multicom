@@ -144,7 +144,7 @@ Two limitations from the earlier build are now fixed rather than documented. The
       browsers, and proof a bystander room is untouched
 - [x] Several judges at once: rooms are isolated per tenant, and three run concurrently in the suite
 - [x] A judge with no WebMCP browser can still run the whole loop, by hand or via the scripted drill
-- [ ] The multi-judge rework deployed to production (verified locally and against `wrangler dev`)
+- [x] The multi-judge rework deployed to production (room `29f046b8`, target `f70f44ab`, smoke 9/9, live acceptance 32/32)
 - [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
 - [x] Interface screenshots captured and indexed
 - [x] Final Devpost field copy written (252 words, under the 300-word limit)

@@ -107,18 +107,21 @@ mode the token comes from `--commander`, then `.commander-token`, then
 room shares one scenario by design. Without `--room` no token is read at all —
 a `.commander-token` on disk must not silently change what is being tested.
 
-### Verified against production, 2026-09-03
+### Verified against production, 2026-09-03 (afternoon)
 
-Room Worker `77a76fa0`, target `01495519`, Pages serving `index-DH4vJj84.js`.
+Room Worker `29f046b8`, target `f70f44ab`, Pages serving `index--7Sdm-Wg.js`.
+This is the multi-judge build plus spectator health and seat-derived agent copy.
 Everything below ran against `https://multicom-web.pages.dev` and the deployed
 Workers, with no secret supplied anywhere.
 
 | Pass | Result |
 | --- | --- |
-| `npm run smoke:prod` | 9/9 — twelve tools, live `wss`, real fault metrics, `data-viz=webgl`, onboarding tiers, lobby at the bare URL, no console errors |
-| `npm run verify:prod` | **32/32, no skips** — including the commander seat claimed with no capability, a real click on the real overlay, and single-use approval |
-| `npm run drill` | **34/34** — three concurrent browsers, red herring rebutted, 3-0 vote, human approval, recovery in all three at 1.0% in 6.4s |
-| `npm run webmcp:chrome` | 12 tools native, `viaPolyfill: false`, 20 of 20 parameter descriptions, longest description 104 chars |
+| `npm run smoke:prod` | 9/9 — twelve tools, live `wss`, real fault metrics at 23%, `data-viz=webgl`, onboarding tiers, lobby at the bare URL, no console errors |
+| `npm run verify:prod` | **32/32, no skips** — including the commander seat claimed with no capability, a real click on the real overlay, recovery in 7.2s, and a bystander room still at 23.0% |
+
+The morning pass against room `77a76fa0` / target `01495519` is superseded by
+this deploy. The drill (`34/34`) and Chrome WebMCP A/B still stand as surface
+evidence; they were not re-run here so as not to spend the lobby budget twice.
 
 The tenancy fix is what these establish that no harness could. In the
 live-acceptance run the worked room recovered to **1.0%** while a bystander room

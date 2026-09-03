@@ -85,8 +85,8 @@ both optional with server-side fallbacks.
 
 | Worker | Version | Bindings |
 | --- | --- | --- |
-| `multicom-storefront-api` | `01495519-5de3-4773-b806-694115c69755` | `SCENARIO` |
-| `multicom-room` | `77a76fa0-1106-44d8-b420-0e537ad260cf` | `ROOMS`, `LOBBY`, `TARGET_ORIGIN`, `ALLOWED_ORIGINS` |
+| `multicom-storefront-api` | `f70f44ab-2676-4489-870a-e47e76275743` | `SCENARIO` |
+| `multicom-room` | `29f046b8-7eac-4ac4-8173-b5c509fde838` | `ROOMS`, `LOBBY`, `TARGET_ORIGIN`, `ALLOWED_ORIGINS` |
 
 Deploying restarts isolates, so open WebSockets drop and reconnect with a new
 member id. That is a blip, not data loss — but it does mean deploying mid-run

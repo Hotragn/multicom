@@ -108,13 +108,10 @@ commander models, [TESTING.md](docs/TESTING.md) for the coverage map,
 [AGENT-DRILL.md](docs/AGENT-DRILL.md) for two real language-model agents working
 the incident unaided.
 
-**Status:** deployed 2026-09-03 and verified against the live Workers. The link
-above serves this build: room `77a76fa0`, target `01495519`, both Durable Object
-migrations applied. A fresh unaided model has taken the commander seat,
-diagnosed the incident, chosen the correct fix and stopped at the human gate;
-what nobody has automated is a person clicking Approve, which is the gate
-working rather than a gap. See [TESTING.md](docs/TESTING.md) for what was run
-against production.
+**Status:** deployed 2026-09-03 afternoon and verified against the live Workers.
+The link above serves this build: room `29f046b8`, target `f70f44ab`, Pages
+`index--7Sdm-Wg.js`. Smoke 9/9, live acceptance 32/32. A bystander room stayed
+at 23% while the worked room recovered to 1%. See [TESTING.md](docs/TESTING.md).
 
 ## License
 
