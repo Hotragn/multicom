@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { ACTION_LIBRARY, ACTION_SUMMARIES, type ActionId, type CheckId } from "../../shared/tools";
 import { ROOM_ID, SERVICE_NAME } from "../../shared/scenario";
+import { isMintedRoomId, isRoomId } from "../../shared/tenancy";
 import type {
   CheckResult,
   ClientMessage,
@@ -12,6 +13,7 @@ import type {
 } from "../../shared/ws-messages";
 import { activeMemberIds, mitigationTally, recomputeMitigations, tally, truncate } from "./domain";
 import { parseClientMessage, ProtocolError } from "./protocol";
+import { targetRequestHeaders } from "./target-request";
 
 export interface RoomEnv {
   TARGET?: Fetcher;
@@ -62,6 +64,18 @@ interface RequestRecord {
 }
 
 interface StoredRoom {
+  /**
+   * The room id this object serves. `ctx.id.name` supplies it when the stub was
+   * built with `idFromName`, but it is persisted as well so the tenant a target
+   * call is scoped to never depends on a runtime property being populated.
+   */
+  roomId?: string;
+  /**
+   * True for a room the lobby provisioned for one visitor. The first connection
+   * to claim `commander` in such a room gets the seat with no shared secret.
+   * Set by the server only — never read from a query string or client message.
+   */
+  selfServe?: boolean;
   state: RoomState;
   nextMember: number;
   nextHypothesis: number;
@@ -77,9 +91,15 @@ interface Session {
   memberId: string | undefined;
   readonly demo: boolean;
   readonly isBot: boolean;
-  readonly canCommand: boolean;
+  canCommand: boolean;
   send(message: ServerMessage): void;
   bindMember(memberId: string): void;
+  /**
+   * Grant this connection the commander capability. Only reachable when the
+   * server has already decided the claim is legitimate: a self-serve room with
+   * no commander seated yet.
+   */
+  grantCommand(): void;
 }
 
 // A target that answers 403 is a misconfigured room, not an unreachable
@@ -98,6 +118,7 @@ interface TargetLogs {
 }
 
 const STORE_KEY = "room";
+export const INIT_PATH = "/__multicom/init";
 const MAX_MEMBERS = 6;
 const MAX_HYPOTHESES = 5;
 const MAX_MITIGATIONS = 3;
@@ -140,7 +161,9 @@ const constantTimeEqual = (left: string, right: string): boolean => {
   return mismatch === 0;
 };
 
-const emptyRoom = (id: string): StoredRoom => ({
+const emptyRoom = (id: string, selfServe = isMintedRoomId(id)): StoredRoom => ({
+  roomId: id,
+  selfServe,
   state: {
     id,
     phase: "triage",
@@ -189,6 +212,10 @@ export class Room extends DurableObject<RoomEnv> {
     this.ready = ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<StoredRoom>(STORE_KEY)) ?? this.room;
       this.room.requestLog ??= {};
+      if (!this.room.roomId && ctx.id.name) this.room.roomId = ctx.id.name;
+      // Derived from the id shape rather than trusted from a caller, so a room
+      // whose storage was reclaimed after an hour empty still knows what it is.
+      this.room.selfServe ??= isMintedRoomId(this.room.roomId ?? this.room.state.id);
       for (const hypothesis of this.room.state.hypotheses) hypothesis.rationales ??= {};
       for (const mitigation of this.room.state.mitigations) mitigation.rationales ??= {};
       await this.reconcileConnections();
@@ -200,11 +227,26 @@ export class Room extends DurableObject<RoomEnv> {
 
   async fetch(request: Request): Promise<Response> {
     await this.ready;
+    const url = new URL(request.url);
+
+    // Internal hook: the lobby marks a freshly provisioned room self-serve. The
+    // public router only forwards `/rooms/<id>/ws`, so no browser can reach it.
+    if (request.method === "POST" && url.pathname === INIT_PATH) {
+      if (!this.room.selfServe) {
+        this.room.selfServe = true;
+        await this.persist();
+      }
+      return new Response(JSON.stringify({ ok: true, selfServe: true }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
     if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
       return new Response("WebSocket upgrade required.", { status: 426 });
     }
 
-    const url = new URL(request.url);
+    await this.captureRoomId(url);
     const configuredToken = this.env.COMMANDER_TOKEN?.trim();
     const presentedToken = url.searchParams.get("commander") ?? "";
     const canCommand = configuredToken
@@ -249,6 +291,11 @@ export class Room extends DurableObject<RoomEnv> {
         session.memberId = memberId;
         socket.serializeAttachment(attachment);
       },
+      grantCommand: () => {
+        attachment.canCommand = true;
+        session.canCommand = true;
+        socket.serializeAttachment(attachment);
+      },
     };
 
     let message: ClientMessage;
@@ -291,7 +338,7 @@ export class Room extends DurableObject<RoomEnv> {
     if (this.hasActiveViewer()) return;
     this.clearTimers();
     await this.ctx.storage.deleteAll();
-    this.room = emptyRoom(this.room.state.id);
+    this.room = emptyRoom(this.tenantId(), this.room.selfServe === true);
   }
 
   private async dispatch(session: Session, message: ClientMessage): Promise<void> {
@@ -408,7 +455,7 @@ export class Room extends DurableObject<RoomEnv> {
       return;
     }
     if (this.room.state.members.filter((member) => member.agentActive).length >= MAX_MEMBERS) {
-      this.fail(session, "room_full", "This room already has six active members.");
+      this.fail(session, "room_full", "This room already has six active members. Start your own room instead.");
       return;
     }
     if (role === "commander" && this.room.state.members.some((member) => member.agentActive && member.role === "commander")) {
@@ -416,8 +463,16 @@ export class Room extends DurableObject<RoomEnv> {
       return;
     }
     if (role === "commander" && !session.canCommand) {
-      this.fail(session, "commander_forbidden", "This connection does not have the commander capability.");
-      return;
+      // A judge with no shared secret has to be able to demonstrate the human
+      // approval gate, which is the whole safety claim. In a room the lobby
+      // provisioned for one visitor, the first claimer takes the seat and the
+      // server grants this connection the capability. Curated rooms are
+      // unchanged: they still require COMMANDER_TOKEN.
+      if (!this.room.selfServe) {
+        this.fail(session, "commander_forbidden", "This connection does not have the commander capability.");
+        return;
+      }
+      session.grantCommand();
     }
 
     const member: Member = {
@@ -604,7 +659,7 @@ export class Room extends DurableObject<RoomEnv> {
       return;
     }
     if (!this.activeCommanderSockets().length) {
-      this.fail(session, "commander_unavailable", "An active human commander is required.", requestId);
+      this.fail(session, "commander_unavailable", "No human commander is seated. Someone must join with role commander before a fix can be approved.", requestId);
       return;
     }
     if (Object.values(this.room.pending).some((pending) => pending.mitigationId === mitigationId)) {
@@ -717,6 +772,35 @@ export class Room extends DurableObject<RoomEnv> {
     }
   }
 
+  /**
+   * The room id every target call is scoped to. `ctx.id.name` is the primary
+   * source; the persisted copy and the broadcast state id are fallbacks so a
+   * call can never quietly land on the shared default tenant.
+   */
+  private tenantId(): string {
+    return this.ctx.id.name ?? this.room.roomId ?? this.room.state.id;
+  }
+
+  /**
+   * The room's own id is not in the DO's storage the first time it wakes, so
+   * take it from the path the router matched and keep it.
+   */
+  private async captureRoomId(url: URL): Promise<void> {
+    if (this.room.roomId) return;
+    const match = /^\/rooms\/([^/]+)\/ws$/.exec(url.pathname);
+    if (!match?.[1]) return;
+    let candidate: string;
+    try {
+      candidate = decodeURIComponent(match[1]);
+    } catch {
+      return;
+    }
+    if (!isRoomId(candidate)) return;
+    this.room.roomId = candidate;
+    this.room.selfServe ??= isMintedRoomId(candidate);
+    await this.persist();
+  }
+
   private ensureMutable(session: Session, requestId: string): boolean {
     if (this.room.state.phase !== "resolved") return true;
     this.fail(session, "room_resolved", "This incident is resolved and the room is locked.", requestId);
@@ -809,7 +893,7 @@ export class Room extends DurableObject<RoomEnv> {
     }
     this.clearTimers();
     await this.ctx.storage.deleteAll();
-    this.room = emptyRoom(this.room.state.id);
+    this.room = emptyRoom(this.tenantId(), this.room.selfServe === true);
     await this.persist();
     this.broadcast({ type: "state", state: cloneState(this.room.state) });
     return true;
@@ -846,6 +930,10 @@ export class Room extends DurableObject<RoomEnv> {
         session.memberId = memberId;
         this.room.bot.memberId = memberId;
       },
+      // The house bot only ever joins as a responder, so it never reaches the
+      // grant path. Keeping it a no-op means the bot cannot become commander
+      // even if the scenario changes.
+      grantCommand: () => undefined,
     };
     return session;
   }
@@ -1179,21 +1267,26 @@ export class Room extends DurableObject<RoomEnv> {
   }
 
   private async targetGet<T>(path: string): Promise<T> {
-    return this.targetFetch<T>(path, { method: "GET" });
+    return this.targetFetch<T>(path, { method: "GET" }, false);
   }
 
   private async targetPost<T>(path: string): Promise<T> {
-    const headers = new Headers();
-    if (this.env.TARGET_TOKEN) headers.set("authorization", `Bearer ${this.env.TARGET_TOKEN}`);
-    return this.targetFetch<T>(path, { method: "POST", headers });
+    return this.targetFetch<T>(path, { method: "POST" }, true);
   }
 
-  private async targetFetch<T>(path: string, init: RequestInit): Promise<T> {
+  private async targetFetch<T>(path: string, init: RequestInit, authorize: boolean): Promise<T> {
     const base = this.env.TARGET_ORIGIN ?? "https://storefront-api.invalid";
+    // Composed here rather than at the call sites, so every read and every write
+    // is scoped to this room's scenario state without anyone remembering to.
+    const headers = targetRequestHeaders({
+      roomId: this.tenantId(),
+      ...(this.env.TARGET_TOKEN ? { targetToken: this.env.TARGET_TOKEN } : {}),
+      authorize,
+    });
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort("target_timeout"), 3_000);
     try {
-      const request = new Request(new URL(path, base), { ...init, signal: controller.signal });
+      const request = new Request(new URL(path, base), { ...init, headers, signal: controller.signal });
       const response = this.env.TARGET ? await this.env.TARGET.fetch(request) : await fetch(request);
       if (!response.ok) throw new TargetError(response.status);
       const text = await response.text();

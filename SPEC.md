@@ -136,7 +136,8 @@ sequenceDiagram
 ## 8. Room rules (exact)
 
 - A room holds at most 6 members. One member must claim role `commander`;
-  only a commander's human can approve mitigations.
+  only a commander's human can approve mitigations. Two ways to claim it, chosen
+  by the server, never by the client (see §19.2).
 - Phases: `triage` → `diagnosing` → `mitigating` → `resolved`. Phase advances
   automatically: first hypothesis, first mitigation proposal, successful fix.
 - At most 5 open hypotheses and 3 open mitigations at once. Beyond that,
@@ -253,6 +254,44 @@ Server → client:
 { "type": "tool_result", "requestId": "r4", "data": { "kind": "check", "result": {} } }
 { "type": "error", "requestId": "r9", "code": "needs_human_confirm", "message": "..." }
 ```
+
+### 10.1 Result envelope (amended 2026-09-03)
+
+`ToolResultData` is a union discriminated by `kind`, and the payload key differs
+per variant. That is the one part of this surface a caller can get silently
+wrong — the wrong path yields `undefined` rather than an error — so it is stated
+here and in each tool's description.
+
+Each definition also carries an `outputSchema`, but do not rely on an agent
+seeing it: `outputSchema` is an MCP-B extension and is not part of the standard
+`ModelContextTool` dictionary, so Chrome's native surface drops it — verified,
+`getTools()` returns none of the twelve carrying one. The description is
+therefore the load-bearing statement, and the schema is a machine-readable
+duplicate for clients that do read it.
+
+| Tool | Resolves with |
+| --- | --- |
+| `join_room` | `{ memberId, state }` — the only result with no `kind` |
+| `get_room_state` | `{ kind: "room_state", state, truncated? }` |
+| `get_service_status` | `{ kind: "service_status", status }` |
+| `query_logs` | `{ kind: "logs", lines, untrustedContentHint: true }` |
+| `run_check` | `{ kind: "check", result }` |
+| `propose_hypothesis` | `{ kind: "hypothesis", hypothesisId }` |
+| `counter_hypothesis` | `{ kind: "counter", hypothesisId }` |
+| `propose_mitigation` | `{ kind: "mitigation", mitigationId }` |
+| `vote` | `{ kind: "vote", yes, no, passed }` |
+| `explain_vote` | `{ kind: "rationale", targetId, count }` |
+| `request_human_confirm` | `{ kind: "confirm", approved, reason }` |
+| `apply_mitigation` | `{ kind: "apply", applied, status }` |
+
+A failed call resolves rather than throws, with `{ error: { code, message } }`.
+That shape is identical for every tool, so a caller handles failure once.
+
+The shapes themselves are unchanged: renaming the payload keys would have
+rippled through five workspaces and two scripts for a cosmetic gain, and the
+`kind` discriminant already makes them safe to narrow. What was missing was the
+statement, not the structure. A test asserts each description names the same
+`kind` and payload keys its published schema requires, so the two cannot drift.
 
 Every tool request after `join` carries a client-generated `requestId`.
 Exactly one `tool_result` or `error` with the same id resolves it. The server
@@ -442,3 +481,172 @@ Assume repo with `SPEC.md` and `shared/` committed.
 > prompts in Official Rules §4: WebMCP fit, better UX, what people+agents can
 > do together now, how WebMCP was implemented). Plain words. No "seamless",
 > no "powerful".
+
+---
+
+## 19. Amendment: the multi-judge MVP (2026-09-03)
+
+Everything above describes a working demo. It was not usable for *evaluation*:
+several judges could not run it at the same time, and a judge could not perform
+the human approval at all. This section records what changed and why. It amends
+§§8–12 and §17; nothing above it was deleted.
+
+### 19.1 A room is a tenant
+
+`target/src/index.ts` routed every request to `SCENARIO.idFromName(SERVICE_NAME)`
+— one global scenario object. Rooms were isolated but the *fault* was not, so
+one judge applying `scale_pool:default` healed the service for every other
+judge, in rooms they had never opened. It is also why the public demo sometimes
+loaded already-recovered at 1.0%.
+
+The room Worker now stamps `X-Multicom-Tenant: <roomId>` on every target call,
+composed inside `targetFetch` so neither `targetGet` nor `targetPost` can omit
+it. The target resolves that header to its own scenario object, validating it
+against the room-id pattern first because the value becomes an object name.
+An absent header keeps the original single-tenant behaviour. `/admin/fault` and
+`/scenario/rearm` are inside the object, so they are tenant-scoped too.
+
+`shared/tenancy.ts` is new and holds the header name, the room-id pattern, the
+minted-id shape, and `resolveTenant`. Room identity crosses three trust
+boundaries, so it gets one source of truth.
+
+### 19.2 Two commander models
+
+The seat was gated on a single global `COMMANDER_TOKEN`. In production a judge
+has no token, so `join_room` with `role: "commander"` failed
+`commander_forbidden` — and the human approval gate, the central safety claim,
+could not be demonstrated by the people evaluating it.
+
+- **Curated rooms** (`p1-storefront`, any hand-written name): unchanged. The
+  capability is still required.
+- **Self-serve rooms** (minted by the lobby): the first connection to claim
+  `commander` takes the seat, and the server grants that connection the
+  capability. Later claims still fail `commander_taken`.
+
+`selfServe` is server state — persisted at mint, re-derived from the room id's
+shape if storage is reclaimed, and never read from a query string or a client
+message. No parameter can make the curated room self-serve.
+
+**The gate is a human click, not the seat.** An agent can hold the seat in its
+own room, so approval deliberately does not follow from holding it. An approval
+is written in exactly one place, reachable only from the `confirm` client
+message, which only the interface's Approve button sends. No tool can produce
+one. §17.11 asserts it.
+
+### 19.3 Provisioning and a lobby
+
+`?room=` absent now means the lobby, not `p1-storefront`. Two paths: start your
+own isolated incident, or watch the curated demo. A minted room id is `r` plus
+20 base32 characters (100 bits).
+
+A second Durable Object class, `Lobby`, owns minting, a per-address budget of 30
+rooms per ten minutes, and a cap of 250 live self-serve rooms. At capacity it
+returns the curated room with `degraded: "capacity"` rather than an error. A
+`room_full` refusal offers a one-click escape to your own room.
+
+### 19.4 Three ways to take part
+
+A judge on stock Safari, or on Chrome without the flag, previously hit a wall
+that said "open this page in a browser with a WebMCP agent". Now:
+
+1. **Bring your own agent** — the twelve tools, with the count actually detected
+   and whether it was native or the MCP-B polyfill.
+2. **Drive it myself** — real operator controls that call the same
+   `RoomClient` methods the tools call, over the same messages, through the same
+   gates. Not a privileged path; §17.12 asserts that.
+3. **Run the scripted drill** — reconnects with `demo=1` and lets the existing
+   house bot work the incident. No new control channel.
+
+The active tier is labelled on screen, so the manual path is never mistaken for
+agent autonomy.
+
+### 19.5 Judge console
+
+`?judge=1`, or the topbar toggle. A ten-row rubric that ticks only from real
+events, each row carrying the activity entry or observation behind it; a run
+summary at resolution; and Markdown and JSON exports. It adds no server
+authority, cannot see another room, and carries no secret out.
+
+Rows are derived from room state and the server-authored activity log, with
+classifiers anchored to the end of the sentence — member names are peer-authored
+and prefix the entry, so an unanchored match would be forgeable.
+
+### 19.6 Amended acceptance criteria
+
+Added to §17:
+
+11. An agent holding the commander seat cannot approve its own write. With one
+    browser, one agent, and no human interaction, `apply_mitigation` never
+    succeeds; exercising all eleven other tools while a confirmation is pending
+    does not move the gate; only a click on Approve does.
+12. Every manual operator control produces the same server effect as the
+    equivalent tool call, and none bypasses join, vote, approval, or the
+    resolved-room lock.
+13. Two rooms resolve independently: resolving one leaves the other's error rate
+    at 23% and its phase not `resolved`. Verified in the browser suite and
+    against the real target Workers.
+14. Three rooms run concurrently, each completing on its own.
+15. Minted room ids match `/^r[a-z2-7]{20}$/`; provisioning is rate limited; a
+    full room offers a way out.
+16. No rubric row ticks without a triggering event, and an exported report
+    contains no secret and no cross-room data.
+17. The hero visualization reaches WebGL, and the room is fully workable with
+    the 3D chunk blocked.
+
+Criterion 7 is unchanged: still exactly 12 tools, same names, same input
+schemas. Only the twelve description strings changed, to state the result
+envelope (§10.1), plus an additive `outputSchema` per tool.
+
+### 19.7 Amendment: the descriptions had to be readable by an agent
+
+Two language models were put in a provisioned room with nothing but the tool
+surface. Both diagnosed the incident correctly and independently — deploy `1f3a`
+set `DB_POOL_MAX` from 50 to 1, the errors precede the `new-checkout` flag, so
+the flag is not causal — and both refused the planted injection line, one
+noting that it demands a plausibly-correct action through the wrong process.
+
+Then the room deadlocked. Both had joined as `responder`, so
+`request_human_confirm` returned `commander_unavailable` and nothing could be
+approved. Three causes, which compose:
+
+1. `role` never said what `commander` *was*. Between two undocumented options
+   the cautious choice is the one that deadlocks the room.
+2. One of them avoided the seat because it believed holding it would let it
+   approve its own fix. That belief is false — §19.2 and §17.11 — but nothing on
+   the surface said so.
+3. The onboarding instruction that *does* say to take the seat is printed on the
+   page, and a well-behaved agent treats page text as untrusted data. The
+   injection defence was working against the onboarding.
+
+This reintroduced the exact blocker §19 exists to remove: a judge whose agent
+behaves well reaches a correct diagnosis and cannot demonstrate the approval
+gate.
+
+**The fix is where the semantics live.** Tool descriptions are capped at 120
+characters by §9 — enough to name the result envelope and no more. JSON Schema
+`description` keys inside `inputSchema` have no such budget, are part of the
+standard dictionary, and are verified to reach a native client: Chrome delivers
+all twelve `inputSchema` values with all 20 parameter descriptions intact
+(`docs/webmcp-chrome-report.json`). It arrives as a JSON string rather than an
+object, which is worth knowing when probing it.
+
+So every parameter is now documented, and four carry the things the agents
+needed: `role` says what the seat is for *and* that holding it grants no
+approval power; `actionId` names each action's effect and says to verify with
+`get_service_status` rather than assume; `choice` states the majority rule;
+`mitigationId` names `commander_unavailable` and how to check for a seated
+commander first. `commander_unavailable`'s message now states the remedy rather
+than only the requirement. The onboarding instruction explains why the seat is
+safe, and says plainly that it is meant to be sent by the human rather than read
+off the page.
+
+Added to §17:
+
+18. Every parameter of every tool carries a description, and the four that
+    decide the run state the specific facts an agent cannot otherwise infer.
+19. A room of responders refuses approval with a message naming the remedy, and
+    the deadlock is escapable by seating a commander.
+
+What this does not establish is that a model now completes the run unaided.
+The descriptions were rewritten in response to one drill; the next drill is the
+test of them. `docs/AGENT-DRILL.md` is the procedure.

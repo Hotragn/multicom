@@ -80,7 +80,7 @@ Run `npm test`. The command checks TypeScript and 38 automated behaviors: two UI
 
 ## Links
 
-- Public demo: <https://multicom-web.pages.dev/?demo=1> (solo demo mode)
+- Public demo: <https://multicom-web.pages.dev/> (lobby; `?demo=1` for the curated room)
 - Room Worker health: <https://multicom-room.multicom-target.workers.dev/health>
 - Target Worker health: <https://multicom-storefront-api.multicom-target.workers.dev/health>
 - Public repository: <https://github.com/Hotragn/multicom>
@@ -93,17 +93,21 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 
 | Order | File | Shows |
 | --- | --- | --- |
-| 1 | `01-critical-room.png` | Critical storefront-api room, live metrics, two people joined |
-| 2 | `02-hypothesis-and-rebuttal.png` | Hypothesis with evidence and an expanded rebuttal |
-| 3 | `03-commander-confirmation.png` | Passed mitigation and the commander approval dialog with its 60-second expiry |
-| 4 | `04-resolved-room.png` | Resolved room, green status, stopped MTTR timer, falling p99 trend |
-| 5 | `05-resolved-second-browser.png` | The same resolution in the second browser context |
-| 6 | `06-untrusted-text-literal.png` | The injection-trap log line rendered as literal text |
-| 7 | `07-mobile-room.png` | The room at 390 px |
-| 8 | `08-judge-cold-open.png` | What a visitor sees with no agent attached: live metrics, the house responder's theory, and the watching notice |
-| 9 | `09-live-production.png` | The deployed build serving the same cold open |
-| 10 | `10-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
-| 11 | `11-real-chrome.png` | The deployed room in real Chrome with native WebMCP enabled |
+| 1 | `01-lobby.png` | The landing page: start your own isolated incident, or watch the curated demo |
+| 2 | `02-war-room.png` | The war room in a critical state, with two participants and the error-rate gauge |
+| 3 | `03-ways-in.png` | The three ways to take part, for a judge with or without an agent |
+| 4 | `04-investigation.png` | The reasoning chain: theory, cited evidence, rebuttal, and the fix beneath it |
+| 5 | `05-commander-approval.png` | The approval overlay naming the server-derived action, blast radius, and who voted why |
+| 6 | `06-manual-controls.png` | Driving the incident by hand, through the same room messages an agent sends |
+| 7 | `07-judge-console.png` | A filled rubric with the evidence behind each row, and the run summary |
+| 8 | `08-resolved.png` | The resolved room: 1% errors, stopped timer, the whole interface cooled to green |
+| 9 | `09-untrusted-literal.png` | The injection-trap log line rendered as literal text |
+| 10 | `10-mobile.png` | The room at 390 px, where the layout becomes tabbed rather than stacked |
+| 11 | `11-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
+
+Two files are captured by hand rather than regenerated, and predate the
+interface rework: `09-live-production.png` (the deployed build) and
+`11-real-chrome.png` (the deployed room in Chrome with native WebMCP enabled).
 
 The twelfth-tool surface is evidenced by `docs/webmcp-chrome-report.json`
 rather than a screenshot of a client menu: it records the tool names, the
@@ -112,21 +116,26 @@ from `tools/chrome-webmcp-check.mjs`.
 
 ## Known limitations
 
-This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is one global state: a resolved room restarts only when nobody has joined it, and for the five minutes after anyone applies the fix every room truthfully reports a healthy service before the fault re-arms itself.
+This challenge build ships one scripted incident and no account system. A disconnected browser rejoins as a new member, and inactive votes are excluded from current tallies.
+
+Two limitations from the earlier build are now fixed rather than documented. The scripted fault is no longer one global state: each room gets its own scenario object, so resolving one room leaves every other room's incident untouched. And commander access no longer needs a shared capability link: a room the lobby provisions seats its first claimer, so anyone can demonstrate the human approval gate. The curated demo room still uses a capability, and that capability still travels in a query string — see `docs/SECURITY.md` for why that is acceptable for one room and what would replace it.
 
 ## Readiness
 
-- [x] Functional project and automated test suite
+- [x] Functional project and automated test suite (67 checks)
 - [x] MIT license and public repository remote
 - [x] Professional README, security notes, and demo plan
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
 - [x] Hosted frontend URL
-- [x] Live browser acceptance pass (room connection live; 11 WebMCP tools visible)
+- [x] Live browser acceptance pass (room connection live; 12 WebMCP tools visible)
 - [x] Live cold-open pass (demo link shows the incident with no agent attached)
-- [x] `apply_mitigation` verified end to end against the deployed Workers: all 14 production checks pass,
-      ending in a real approval click, an apply against the live target, and recovery in three browsers
+- [x] `apply_mitigation` verified end to end against real Workers: all 32 checks pass, ending in a
+      real approval click with no secret, an apply against the live target, recovery in three
+      browsers, and proof a bystander room is untouched
+- [x] Several judges at once: rooms are isolated per tenant, and three run concurrently in the suite
+- [x] A judge with no WebMCP browser can still run the whole loop, by hand or via the scripted drill
+- [ ] The multi-judge rework deployed to production (verified locally and against `wrangler dev`)
 - [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
-- [ ] `TARGET_TOKEN` set on the deployed room Worker, so `apply_mitigation` works in production
 - [x] Interface screenshots captured and indexed
 - [x] Final Devpost field copy written (252 words, under the 300-word limit)
 - [x] Real WebMCP client verified: 12 tools register natively in Chrome 152 behind `enable-webmcp-testing`, with a polyfill-fallback control

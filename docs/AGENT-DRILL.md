@@ -8,6 +8,15 @@ description passes every Playwright assertion.
 So this drill puts real language-model agents in the room, tells them nothing
 about the incident, and watches what they do.
 
+> **Stale as of the 2026-09-03 rework, and worth re-running.** The findings
+> below came from the previous build. All twelve tool descriptions were
+> rewritten since — they now name each result envelope — and the descriptions
+> are precisely what this drill exercises: they are the only thing an unaided
+> agent reads to decide what to call. `tools/agent-drill.mjs` is a *scripted*
+> multi-browser run and does not substitute for this; it proves the protocol and
+> the gates hold under concurrency, not that a model can reason from the surface.
+> Nothing here has been re-verified against the current descriptions.
+
 ## Running it
 
 Start the stack, with a matching `TARGET_TOKEN` in both `.dev.vars` files and a
@@ -122,9 +131,13 @@ reason recorded there.
 
 `query_logs` treats `15m` and `1h` as the same window.
 
-The Playwright harness does not write activity entries for votes or vote
-rationales, while the room Worker does — visible in the drill transcript as
-`Arjun-assistant voted no on rollback:deploy-1f3a.` So the activity panel in
-screenshots taken through the harness is shorter than the real one. The
-divergence predates `explain_vote` and is a test-double gap, not a product one;
-`tools/live-acceptance.mjs` exercises the real Worker path.
+~~The Playwright harness does not write activity entries for votes or vote
+rationales, while the room Worker does.~~ **Closed on 2026-09-03.** The harness
+was omitting seven of the room's activity sentences — the two above plus
+`query_logs`, `run_check`, `request_confirm`, `confirm` and `apply` — and the
+hypothesis sentence was missing its confidence. It also lacked the room's
+`confirmation_pending` guard, so a duplicate approval request hung instead of
+being refused, which made the test double strictly more permissive than the
+product. Both are fixed in `tests/support/protocol-harness.ts`, and the judge
+console reads that log, so the gap would now fail a test rather than shorten a
+screenshot.

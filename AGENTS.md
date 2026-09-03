@@ -39,6 +39,24 @@ Do not mark work complete by description. Mark it complete by gate.
    was scripted, and a bare `approved: false` could not distinguish a
    commander's refusal from nobody answering. The freeze still stands for
    everything else.
+
+   Amended a second time, with written human authorization, on 2026-09-03, for
+   the multi-judge rework recorded in `SPEC.md` §19:
+
+   - `shared/tenancy.ts` is **new**. Room identity crosses three trust
+     boundaries — the browser picks a room, the room Worker scopes its target
+     calls to it, the target Worker keys its scenario by it — so the header
+     name, the room-id pattern, and the minted-id shape need one source of
+     truth. Purely additive; nothing existing changed.
+   - `shared/tools.ts`: the twelve **description strings** changed, to state
+     each tool's exact result envelope (`SPEC.md` §10.1). The payload key
+     differs per result variant, and an agent that guessed wrong got
+     `undefined` with no error. No tool name, input schema, action-library
+     entry, or message type changed; there are still exactly 12 tools.
+
+   Still frozen: `shared/ws-messages.ts` and `shared/scenario.ts`. The result
+   union's shapes were deliberately left alone — renaming payload keys would
+   have rippled through five workspaces and two scripts for a cosmetic gain.
 2. Stay in your lane. Each task owns specific directories (see Repo map).
    Never edit another module's directory.
 3. WebMCP imperative API only. Feature-detect `navigator.modelContext` and

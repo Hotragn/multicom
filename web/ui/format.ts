@@ -52,6 +52,26 @@ export function formatActivityTime(value: number): string {
   return timeFormatter.format(date);
 }
 
+const stampFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+export function formatTimestamp(value: number): string {
+  const date = epochSecondsToDate(value);
+  return Number.isNaN(date.valueOf()) ? "Unknown time" : stampFormatter.format(date);
+}
+
+/** ISO 8601, for the machine-readable half of a run report. */
+export function isoTimestamp(value: number): string {
+  const date = epochSecondsToDate(value);
+  return Number.isNaN(date.valueOf()) ? "" : date.toISOString();
+}
+
 export function phaseLabel(phase: string): string {
   switch (phase) {
     case "triage":

@@ -18,6 +18,8 @@
     "test": "npm run typecheck && npm run test:unit && npm run test:e2e",
     "capture:screenshots": "playwright test -c tests/playwright.screenshots.config.ts",
     "verify:prod": "node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev",
+    "drill": "node tools/agent-drill.mjs",
+    "drill:local": "node tools/agent-drill.mjs --app http://127.0.0.1:5173 --target http://127.0.0.1:8788",
     "webmcp:chrome": "node tools/chrome-webmcp-check.mjs",
     "token:target": "node tools/set-target-token.mjs",
     "token:commander": "node tools/set-commander-token.mjs"

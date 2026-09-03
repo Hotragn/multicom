@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { ACTION_LIBRARY, CHECK_IDS, type ActionId, type CheckId, type LogWindow } from "../../shared/tools";
 import { SERVICE_NAME } from "../../shared/scenario";
+import { scenarioTenantFor } from "./tenant";
 import {
   INITIAL_SCENARIO,
   checkAt,
@@ -140,7 +141,14 @@ export default {
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true, service: SERVICE_NAME });
     }
-    const id = env.SCENARIO.idFromName(SERVICE_NAME);
+    // One scenario object per room. Routing every request to a single global
+    // object meant one judge applying scale_pool:default healed the service for
+    // every other judge, in rooms they had never opened. The header is validated
+    // against the same pattern the room Worker accepts, because the value is
+    // used verbatim as a Durable Object name.
+    const tenant = scenarioTenantFor(request);
+    if (!tenant.ok) return json({ error: tenant.code }, 400);
+    const id = env.SCENARIO.idFromName(tenant.tenant);
     return env.SCENARIO.get(id).fetch(request);
   },
 } satisfies ExportedHandler<Env>;

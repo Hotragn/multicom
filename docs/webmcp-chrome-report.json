@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-09-03T05:47:00.388Z",
-  "target": "https://multicom-web.pages.dev/?demo=1",
-  "profile": "C:\\Users\\hotra\\AppData\\Local\\Temp\\multicom-webmcp-profile",
+  "checkedAt": "2026-09-03T10:21:43.895Z",
+  "target": "http://127.0.0.1:5173/?demo=1",
+  "profile": "C:/Users/hotra/AppData/Local/Temp/mc-webmcp-local",
   "flag": "enable-webmcp-testing",
   "flagToggle": {
     "ok": true,
@@ -16,7 +16,7 @@
   "nativeWebMcp": true,
   "deployedPage": {
     "count": 12,
-    "longestDescription": 74,
+    "longestDescription": 99,
     "names": [
       "apply_mitigation",
       "counter_hypothesis",
@@ -31,7 +31,15 @@
       "run_check",
       "vote"
     ],
-    "viaPolyfill": false
+    "viaPolyfill": false,
+    "fieldsDelivered": {
+      "withInputSchema": 12,
+      "inputSchemaType": "string",
+      "withOutputSchema": 0,
+      "withAnnotations": 5,
+      "documentedParameters": 20
+    },
+    "joinRoomRole": "Which seat to take. A room has at most one commander. commander is the seat whose browser is shown the human approval dialog. Holding it does NOT let you approve anything: an approval is only ever created by a person clicking Approve in that browser, and no tool on this surface can do it for them — request_human_confirm asks and then waits. So if you are the only participant, take commander, so that the human at your browser is the one who can approve. If someone is already seated as commander, take responder. A room with no commander cannot be completed: request_human_confirm fails with commander_unavailable."
   },
   "controlDeployedPage": {
     "count": 12,

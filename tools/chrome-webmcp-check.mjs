@@ -87,11 +87,48 @@ report.deployedPage = await page.evaluate(async () => {
   const surface = document.modelContext ?? navigator.modelContext;
   if (!surface || typeof surface.getTools !== "function") return { error: "no getTools on this surface" };
   const tools = await surface.getTools();
+  // Chrome hands `inputSchema` back as a JSON *string*, not an object. Reading
+  // it as an object silently reports zero documented parameters, which is how
+  // this probe first talked itself into believing the descriptions were
+  // stripped. They are not: they arrive intact inside that string.
+  const schemaOf = (tool) => {
+    const raw = tool.inputSchema;
+    if (!raw) return null;
+    if (typeof raw === "string") {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+    return raw;
+  };
+  const properties = (tool) => Object.values(schemaOf(tool)?.properties ?? {});
+  const join = tools.find((tool) => tool.name === "join_room");
   return {
     count: tools.length,
     longestDescription: Math.max(...tools.map((tool) => (tool.description ?? "").length)),
     names: tools.map((tool) => tool.name).sort(),
     viaPolyfill: Object.prototype.hasOwnProperty.call(surface, "__isWebMCPPolyfill"),
+    // Which optional fields a native client actually receives. `inputSchema`
+    // and the JSON Schema inside it are standard, so per-parameter
+    // documentation is a channel an agent really sees — and unlike the
+    // description it has no length budget. `outputSchema` is an MCP-B
+    // extension the standard dictionary does not carry, so it is expected to
+    // arrive as 0 here; that is why the descriptions state the envelope too.
+    fieldsDelivered: {
+      withInputSchema: tools.filter((tool) => tool.inputSchema).length,
+      inputSchemaType: typeof tools[0]?.inputSchema,
+      withOutputSchema: tools.filter((tool) => tool.outputSchema).length,
+      withAnnotations: tools.filter((tool) => tool.annotations).length,
+      documentedParameters: tools.reduce(
+        (total, tool) =>
+          total + properties(tool).filter((property) => typeof property?.description === "string").length,
+        0,
+      ),
+    },
+    // The one description that decides whether a room can be approved at all.
+    joinRoomRole: schemaOf(join ?? {})?.properties?.role?.description ?? null,
   };
 });
 console.log(`deployed page: ${JSON.stringify(report.deployedPage, null, 2)}`);

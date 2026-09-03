@@ -1,4 +1,8 @@
-export { createToolDefinitions, TOOL_INPUT_SCHEMAS } from "./tool-definitions.ts";
+export {
+  createToolDefinitions,
+  TOOL_INPUT_SCHEMAS,
+  TOOL_OUTPUT_SCHEMAS,
+} from "./tool-definitions.ts";
 export {
   registerWarRoomToolsOnce,
   detectModelContext,
@@ -13,6 +17,7 @@ export {
   type RoomClientOptions,
   type RoomConnectionState,
 } from "./room-client.ts";
+export { provisionRoom, type ProvisionedRoom } from "./provisioning.ts";
 export {
   TOOL_RESULT_MAX_UTF8_BYTES,
   assertWithinToolResultBudget,

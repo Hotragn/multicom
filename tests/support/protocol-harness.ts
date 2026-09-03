@@ -1,4 +1,4 @@
-import { createServer, type Server } from "node:http";
+import { createServer, type Server, type ServerResponse } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
 import { ACTION_LIBRARY, ACTION_SUMMARIES, type ActionId } from "../../shared/tools";
 import { FAULTY_STATUS, ROOM_ID, SERVICE_NAME } from "../../shared/scenario";
@@ -10,8 +10,17 @@ import type {
   ServiceStatus,
   ToolResultData,
 } from "../../shared/ws-messages";
+import {
+  TENANT_HEADER,
+  isMintedRoomId,
+  isRoomId,
+  mintRoomId,
+  resolveTenant,
+  shortRoomCode,
+} from "../../shared/tenancy";
 import { activeMemberIds, recomputeMitigations, tally, truncate } from "../../worker/src/domain";
 import { parseClientMessage, ProtocolError } from "../../worker/src/protocol";
+import { targetRequestHeaders } from "../../worker/src/target-request";
 import {
   checkAt,
   selectLogs,
@@ -58,10 +67,54 @@ const nowSeconds = (): number => Math.floor(Date.now() / 1_000);
 const allowedAction = (value: string): value is ActionId =>
   (ACTION_LIBRARY as readonly string[]).includes(value);
 
+const armedScenario = (): PersistedScenario => ({
+  armed: true,
+  armedAt: Date.now(),
+  actionId: null,
+  appliedAt: null,
+});
+
+/**
+ * One scenario per tenant, resolved exactly the way the target Worker resolves
+ * it: from the header the room Worker stamps on every call.
+ *
+ * The registry is deliberately shared across harness rooms. If
+ * `targetRequestHeaders` ever stopped sending the tenant, every room would
+ * collapse onto the fallback entry and the isolation test would fail — which is
+ * the point. The alternative, a scenario field per room, would have passed the
+ * isolation test while production stayed broken.
+ */
+class ScenarioRegistry {
+  private readonly tenants = new Map<string, PersistedScenario>();
+
+  private key(headers: Headers): string {
+    const resolved = resolveTenant(headers.get(TENANT_HEADER), SERVICE_NAME);
+    if (!resolved.ok) throw new Error("invalid_tenant");
+    return resolved.tenant;
+  }
+
+  read(headers: Headers): PersistedScenario {
+    const key = this.key(headers);
+    const existing = this.tenants.get(key);
+    if (existing) return existing;
+    const created = armedScenario();
+    this.tenants.set(key, created);
+    return created;
+  }
+
+  write(headers: Headers, next: PersistedScenario): void {
+    this.tenants.set(this.key(headers), next);
+  }
+
+  clear(): void {
+    this.tenants.clear();
+  }
+}
+
 class HarnessRoom {
   readonly state: RoomState;
   readonly peers = new Set<Peer>();
-  scenario: PersistedScenario = { armed: true, armedAt: Date.now(), actionId: null, appliedAt: null };
+  readonly selfServe: boolean;
   approvalTtlMs: number;
 
   private nextMember = 1;
@@ -80,8 +133,15 @@ class HarnessRoom {
   };
   private statusTimer: ReturnType<typeof setInterval> | undefined;
 
-  constructor(readonly id: string, approvalTtlMs: number) {
+  constructor(
+    readonly id: string,
+    approvalTtlMs: number,
+    private readonly scenarios: ScenarioRegistry,
+  ) {
     this.approvalTtlMs = approvalTtlMs;
+    // Mirrors the room Worker: a room the lobby minted lets its first claimer
+    // take the commander seat without a shared secret.
+    this.selfServe = isMintedRoomId(id);
     this.state = {
       id,
       phase: "triage",
@@ -190,13 +250,17 @@ class HarnessRoom {
         this.result(peer, message.requestId, { kind: "room_state", state: clone(this.state) });
         return;
       case "get_service_status":
-        this.result(peer, message.requestId, { kind: "service_status", status: snapshotAt(this.scenario, Date.now()) });
+        this.result(peer, message.requestId, { kind: "service_status", status: this.targetStatus() });
         return;
       case "query_logs":
         if (message.service !== SERVICE_NAME) {
           this.error(peer, message.requestId, "unknown_service", "Only storefront-api is available.");
           return;
         }
+        this.activity(
+          `${this.name(peer)} searched ${message.window} of ${truncate(message.service, 40)} logs.`,
+        );
+        this.broadcastState();
         this.result(peer, message.requestId, {
           kind: "logs",
           lines: selectLogs(message.window, message.filter),
@@ -204,7 +268,9 @@ class HarnessRoom {
         });
         return;
       case "run_check":
-        this.result(peer, message.requestId, { kind: "check", result: checkAt(this.scenario, message.checkId, Date.now()) });
+        this.activity(`${this.name(peer)} ran ${message.checkId}.`);
+        this.broadcastState();
+        this.result(peer, message.requestId, { kind: "check", result: checkAt(this.readScenario(), message.checkId, Date.now()) });
         if (message.checkId === "error_timeline" || message.checkId === "pool_in_use") {
           this.bot.evidenceSeen = true;
           this.botCounter();
@@ -239,11 +305,16 @@ class HarnessRoom {
     if (this.state.members.filter((member) => member.agentActive).length >= 6) {
       return this.error(peer, undefined, "room_full", "The room already has six active members.");
     }
-    if (role === "commander" && !peer.commanderAuthorized) {
-      return this.error(peer, undefined, "commander_forbidden", "A commander capability is required.");
-    }
     if (role === "commander" && this.state.members.some((member) => member.agentActive && member.role === "commander")) {
       return this.error(peer, undefined, "commander_taken", "The commander role is already occupied.");
+    }
+    if (role === "commander" && !peer.commanderAuthorized) {
+      if (!this.selfServe) {
+        return this.error(peer, undefined, "commander_forbidden", "A commander capability is required.");
+      }
+      // First claimer in a provisioned room takes the seat, and the server
+      // grants this connection the capability so it can answer confirmations.
+      peer.commanderAuthorized = true;
     }
     const member: Member = { id: `u${this.nextMember++}`, name, role, agentActive: true };
     peer.memberId = member.id;
@@ -271,7 +342,9 @@ class HarnessRoom {
       rationales: {},
     });
     if (this.state.phase === "triage") this.state.phase = "diagnosing";
-    this.activity(`${this.name(peer)} proposed ${message.title}.`);
+    this.activity(
+      `${this.name(peer)} proposed ${truncate(message.title, 72)} (${message.confidence.toFixed(2)}).`,
+    );
     this.broadcastState();
     this.result(peer, message.requestId, { kind: "hypothesis", hypothesisId: id });
   }
@@ -281,7 +354,7 @@ class HarnessRoom {
     const hypothesis = this.state.hypotheses.find((item) => item.id === hypothesisId);
     if (!hypothesis) return this.error(peer, requestId, "not_found", "Hypothesis not found.");
     hypothesis.rebuttals.push({ by: peer.memberId!, evidence });
-    this.activity(`${this.name(peer)} challenged ${hypothesis.title}.`);
+    this.activity(`${this.name(peer)} challenged ${truncate(hypothesis.title, 64)}.`);
     this.broadcastState();
     this.result(peer, requestId, { kind: "counter", hypothesisId });
   }
@@ -307,6 +380,9 @@ class HarnessRoom {
     if (hypothesis) {
       hypothesis.votes[peer.memberId!] = choice;
       const counts = tally(hypothesis.votes, activeMemberIds(this.state));
+      this.activity(
+        `${this.name(peer)} voted ${choice} on ${truncate(hypothesis.title, 56)}.`,
+      );
       this.broadcastState();
       this.result(peer, requestId, { kind: "vote", ...counts, passed: counts.yes > activeMemberIds(this.state).size / 2 });
       return;
@@ -316,6 +392,7 @@ class HarnessRoom {
     mitigation.votes[peer.memberId!] = choice;
     recomputeMitigations(this.state);
     const counts = tally(mitigation.votes, activeMemberIds(this.state));
+    this.activity(`${this.name(peer)} voted ${choice} on ${mitigation.actionId}.`);
     this.broadcastState();
     this.result(peer, requestId, { kind: "vote", ...counts, passed: mitigation.passed });
   }
@@ -332,6 +409,10 @@ class HarnessRoom {
       return this.error(peer, requestId, "no_vote", "Vote on this first, then explain the vote.");
     }
     target.rationales[peer.memberId!] = truncate(text, 240);
+    const label = "title" in target ? truncate(target.title, 56) : target.actionId;
+    this.activity(
+      `${this.name(peer)} explained a ${target.votes[peer.memberId!]} vote on ${label}.`,
+    );
     this.broadcastState();
     this.result(peer, requestId, {
       kind: "rationale",
@@ -345,7 +426,13 @@ class HarnessRoom {
     const mitigation = this.state.mitigations.find((item) => item.id === mitigationId);
     if (!mitigation?.passed) return this.error(peer, requestId, "not_passed", "Mitigation has not passed.");
     const commanders = [...this.peers].filter((candidate) => this.member(candidate.memberId)?.role === "commander");
-    if (!commanders.length) return this.error(peer, requestId, "commander_unavailable", "No commander is active.");
+    if (!commanders.length) return this.error(peer, requestId, "commander_unavailable", "No human commander is seated. Someone must join with role commander before a fix can be approved.");
+    // Mirrors the room Worker. Without this guard a second request for the same
+    // mitigation opened a second confirmation and the caller's promise simply
+    // hung, which reads as a client hang rather than the refusal it is.
+    if ([...this.pending.values()].some((item) => item.mitigationId === mitigationId)) {
+      return this.error(peer, requestId, "confirmation_pending", "This mitigation already awaits commander review.");
+    }
     const id = `c${this.nextConfirmation++}`;
     const expiresAt = Date.now() + this.approvalTtlMs;
     const pending: PendingConfirmation = {
@@ -358,6 +445,10 @@ class HarnessRoom {
       timer: setTimeout(() => this.expire(id), this.approvalTtlMs),
     };
     this.pending.set(id, pending);
+    this.activity(
+      `${this.name(peer)} requested commander approval for ${mitigation.actionId}.`,
+    );
+    this.broadcastState();
     const prompt: ServerMessage = {
       type: "confirm_request",
       confirmationId: id,
@@ -377,6 +468,8 @@ class HarnessRoom {
     clearTimeout(pending.timer);
     this.pending.delete(id);
     if (approved) this.approvals.set(pending.actionId, { mitigationId: pending.mitigationId, actionId: pending.actionId, expiresAt: Date.now() + this.approvalTtlMs });
+    this.activity(`${this.name(peer)} ${approved ? "approved" : "rejected"} ${pending.actionId}.`);
+    this.broadcastState();
     this.result(pending.requester, pending.requestId, { kind: "confirm", approved, reason: approved ? "granted" : "rejected" });
   }
 
@@ -399,12 +492,31 @@ class HarnessRoom {
       return this.error(peer, requestId, "needs_human_confirm", "Fresh commander approval is required.");
     }
     this.approvals.delete(rawActionId);
-    this.scenario = { ...this.scenario, actionId: rawActionId, appliedAt: Date.now() };
+    this.writeScenario({ ...this.readScenario(), actionId: rawActionId, appliedAt: Date.now() });
     if (!this.state.appliedActions.includes(rawActionId)) this.state.appliedActions.push(rawActionId);
-    const status = snapshotAt(this.scenario, Date.now());
+    const status = this.targetStatus();
+    this.activity(`${this.name(peer)} applied ${rawActionId} after commander approval.`);
     this.broadcastState();
     this.broadcast({ type: "status", ...status });
     this.result(peer, requestId, { kind: "apply", applied: true, status });
+  }
+
+  // Every target read and write goes through the same header builder the room
+  // Worker uses, so the tenant scoping is the production code path.
+  private targetHeaders(authorize = false): Headers {
+    return targetRequestHeaders({ roomId: this.id, targetToken: "harness-target-token", authorize });
+  }
+
+  private readScenario(): PersistedScenario {
+    return this.scenarios.read(this.targetHeaders());
+  }
+
+  private writeScenario(next: PersistedScenario): void {
+    this.scenarios.write(this.targetHeaders(true), next);
+  }
+
+  private targetStatus(): ServiceStatus {
+    return snapshotAt(this.readScenario(), Date.now());
   }
 
   private mutable(peer: Peer, requestId: string): boolean {
@@ -417,7 +529,7 @@ class HarnessRoom {
     if (this.statusTimer) return;
     this.broadcast({ type: "status", ...FAULTY_STATUS });
     this.statusTimer = setInterval(() => {
-      const status = snapshotAt(this.scenario, Date.now());
+      const status = this.targetStatus();
       this.broadcast({ type: "status", ...status });
       if (this.state.appliedActions.includes("scale_pool:default") && status.errorRate < 0.02) {
         this.state.phase = "resolved";
@@ -431,7 +543,7 @@ class HarnessRoom {
   }
 
   private restartIncident(): void {
-    this.scenario = { armed: true, armedAt: Date.now(), actionId: null, appliedAt: null };
+    this.writeScenario(armedScenario());
     if (this.bot.joinTimer) clearTimeout(this.bot.joinTimer);
     if (this.bot.hypothesisTimer) clearTimeout(this.bot.hypothesisTimer);
     this.bot.peer = undefined;
@@ -554,28 +666,67 @@ export interface ProtocolHarness {
   readonly wsOrigin: string;
   reset(): void;
   setApprovalTtl(milliseconds: number): void;
+  /** Number of rooms the provisioning endpoint has minted since the last reset. */
+  provisionedRooms(): readonly string[];
+  setProvisionLimit(perAddress: number): void;
   close(): Promise<void>;
 }
 
+// Mirrors the lobby's per-address budget. Small on purpose so a test can hit it.
+const DEFAULT_PROVISION_LIMIT = 8;
+
 export async function startProtocolHarness(commanderToken = "test-commander-token"): Promise<ProtocolHarness> {
   const rooms = new Map<string, HarnessRoom>();
+  const scenarios = new ScenarioRegistry();
+  const minted: string[] = [];
   let approvalTtlMs = 60_000;
+  let provisionLimit = DEFAULT_PROVISION_LIMIT;
+  let provisionCount = 0;
+
+  const send = (response: ServerResponse, status: number, body: unknown): void => {
+    response.writeHead(status, {
+      "content-type": "application/json; charset=utf-8",
+      "access-control-allow-origin": "*",
+    });
+    response.end(JSON.stringify(body));
+  };
+
   const server: Server = createServer((request, response) => {
     if (request.url === "/health") {
-      response.writeHead(200, { "content-type": "application/json" });
-      response.end('{"ok":true}');
+      send(response, 200, { ok: true });
+      return;
+    }
+    if (request.url === "/rooms" && request.method === "OPTIONS") {
+      response.writeHead(204, {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "content-type",
+      });
+      response.end();
+      return;
+    }
+    if (request.url === "/rooms" && request.method === "POST") {
+      if (provisionCount >= provisionLimit) {
+        send(response, 429, { error: "rate_limited", retryAfterSeconds: 60, fallbackRoomId: ROOM_ID });
+        return;
+      }
+      provisionCount += 1;
+      const roomId = mintRoomId();
+      minted.push(roomId);
+      send(response, 200, { roomId, selfServe: true, shortCode: shortRoomCode(roomId) });
       return;
     }
     response.writeHead(404).end();
   });
+
   const sockets = new WebSocketServer({ noServer: true });
   server.on("upgrade", (request, socket, head) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
-    const match = /^\/rooms\/([A-Za-z0-9_-]{1,80})\/ws$/.exec(url.pathname);
-    if (!match) return socket.destroy();
+    const match = /^\/rooms\/([^/]+)\/ws$/.exec(url.pathname);
+    const roomId = match?.[1] ? decodeURIComponent(match[1]) : "";
+    if (!match || !isRoomId(roomId)) return socket.destroy();
     sockets.handleUpgrade(request, socket, head, (webSocket) => {
-      const roomId = match[1] ?? ROOM_ID;
-      const room = rooms.get(roomId) ?? new HarnessRoom(roomId, approvalTtlMs);
+      const room = rooms.get(roomId) ?? new HarnessRoom(roomId, approvalTtlMs, scenarios);
       rooms.set(roomId, room);
       room.connect(
         webSocket,
@@ -594,11 +745,21 @@ export async function startProtocolHarness(commanderToken = "test-commander-toke
     reset() {
       for (const room of rooms.values()) room.close();
       rooms.clear();
+      scenarios.clear();
+      minted.length = 0;
       approvalTtlMs = 60_000;
+      provisionLimit = DEFAULT_PROVISION_LIMIT;
+      provisionCount = 0;
     },
     setApprovalTtl(milliseconds: number) {
       approvalTtlMs = milliseconds;
       for (const room of rooms.values()) room.approvalTtlMs = milliseconds;
+    },
+    provisionedRooms() {
+      return [...minted];
+    },
+    setProvisionLimit(perAddress: number) {
+      provisionLimit = perAddress;
     },
     async close() {
       for (const room of rooms.values()) room.close();
