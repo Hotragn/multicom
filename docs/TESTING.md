@@ -87,14 +87,20 @@ yourself from the repo root:
 node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev
 ```
 
-Still unverified in production: the approval and apply pair, because it needs a
-commander approval and the deployed commander capability is deliberately
-private. Without one the run reports `SKIP` and exits clean. Supply it through
-the environment so the capability stays off your command line:
+The approval and apply pair needs a commander capability, and the deployed one
+is deliberately private. Without it the run reports `SKIP` and exits clean.
+
+Rotating writes the capability to `.commander-token` (gitignored, owner-only)
+and `verify:prod` picks it up, so nothing has to be copied or held in a shell
+variable:
 
 ```bash
-COMMANDER_TOKEN=... node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev
+npm run token:commander
 ```
+
+Precedence is `--commander`, then that file, then `COMMANDER_TOKEN`. Anything
+that is not 32 hex bytes is treated as absent rather than rejected, so a stale
+placeholder in a shell cannot masquerade as a failing product check.
 
 From the repo root there are shorthands, which is the reliable way to avoid
 pointing `node` at the wrong path:

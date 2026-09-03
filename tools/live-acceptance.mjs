@@ -17,7 +17,19 @@ const arg = (flag, fallback) => {
 };
 
 const appOrigin = arg("--app", "http://127.0.0.1:5173");
-const commanderToken = arg("--commander", process.env.COMMANDER_TOKEN ?? "");
+// Precedence: explicit flag, then the file the rotation writes, then the
+// environment. Anything that is not 32 hex bytes is not a token, so a
+// leftover placeholder reads as "absent" rather than "rejected".
+const looksLikeToken = (value) => /^[0-9a-f]{64}$/.test(value ?? "");
+const tokenFromFile = await readFile(repo(".commander-token"), "utf8")
+  .then((raw) => raw.trim())
+  .catch(() => "");
+const supplied = arg("--commander", "") || tokenFromFile || process.env.COMMANDER_TOKEN || "";
+if (supplied && !looksLikeToken(supplied)) {
+  console.log(`ignoring a commander value that is not 32 hex bytes (${supplied.length} chars)`);
+  console.log("Mint one with: npm run token:commander\n");
+}
+const commanderToken = looksLikeToken(supplied) ? supplied : "";
 const room = arg("--room", `live-${Date.now().toString(36)}`);
 
 let failures = 0;
@@ -175,7 +187,7 @@ const unapproved = await call(alice, "apply_mitigation", { actionId: "scale_pool
 check("apply refused with no human approval", unapproved?.error?.code === "needs_human_confirm", unapproved?.error?.code);
 
 if (!canCommand) {
-  skip("commander approval and apply", "no commander capability supplied; pass --commander or set COMMANDER_TOKEN");
+  skip("commander approval and apply", "no commander capability; run `npm run token:commander`");
   await browser.close();
   console.log(`
 ${failures === 0 ? `PRE-GATE CHECKS PASSED (${skipped} skipped)` : `${failures} CHECK(S) FAILED`}`);

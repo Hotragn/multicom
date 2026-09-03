@@ -14,3 +14,6 @@ blob-report/
 Thumbs.db
 .wt/
 .gstack/
+
+# local commander capability written by tools/set-commander-token.mjs
+.commander-token
