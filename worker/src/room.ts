@@ -760,8 +760,11 @@ export class Room extends DurableObject<RoomEnv> {
   private async beginDemoSpectating(): Promise<void> {
     if (this.isSpentDemoRoom()) {
       // A spent demo room is useless to whoever opens the link next, but never
-      // pull the room out from under someone who is still in it.
-      if (this.ctx.getWebSockets().length > 1) return;
+      // pull the room out from under someone who is actually in it. Presence
+      // here means a joined member, not an open socket: hibernated sockets from
+      // browsers that have gone away still show up in getWebSockets(), and
+      // counting those left the public room stuck at an 82 minute incident.
+      if (this.hasActiveHuman()) return;
       if (!(await this.restartIncident())) return;
     }
     const alreadyArmed = this.room.bot.enabled && this.room.bot.humanJoinedAt !== null;

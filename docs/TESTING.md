@@ -75,9 +75,18 @@ Verified against the deployed Workers on September 3, 2026:
 - Opening `?demo=1` with no agent shows live metrics, the house responder, and the watching notice.
 - A stale demo room restarts on arrival: MTTR returned to 0:18 from 98:49.
 
-Not yet verified live, and currently blocked: `apply_mitigation`. The room Worker
-has no `TARGET_TOKEN`, so the target answers its action calls with 403. Set that
-secret on the room Worker before running the checklist below.
+`TARGET_TOKEN` is set on both Workers. The room's authorized write to the target
+is verified in production: reconnecting to a spent demo room drove the room's
+re-arm call, the incident timer reset from 82:16 to 0:24, and `wrangler tail`
+recorded no authorization failure.
+
+Still unverified in production: `apply_mitigation` end to end, because it needs
+a commander approval and the deployed commander capability is deliberately
+private. Run it with the commander link:
+
+```bash
+node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev --commander "<commander token>"
+```
 
 ## Against a real WebMCP browser
 

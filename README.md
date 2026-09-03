@@ -182,9 +182,11 @@ Verified against the deployed Workers: both health endpoints return 200, the
 production client reports a live room, all 12 tools register, and opening the
 demo link with no agent shows the live incident with the house responder.
 
-**One step is outstanding.** The room Worker has no `TARGET_TOKEN`, so the target
-rejects its action calls with 403 and `apply_mitigation` fails live. Both Workers
-need the same value; this generates one and sets it on both, without printing it:
+`TARGET_TOKEN` is set on both Workers, and the room's authorized write to the
+target is verified in production: reconnecting to a spent demo room made the
+room re-arm the scripted fault, and the Worker logged no authorization failure.
+To rotate the secret later, this generates one value and sets it on both without
+printing it:
 
 ```bash
 node tools/set-target-token.mjs

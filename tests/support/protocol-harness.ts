@@ -105,10 +105,14 @@ class HarnessRoom {
     if (demo) {
       // Mirror the room Worker: a resolved demo room restarts for the next
       // visitor, unless somebody else is still watching it.
-      const watchers = [...this.peers].filter((item) => !item.isBot).length;
+      // Mirror the room Worker: presence means a joined member, not an open
+      // socket, so a browser that went away cannot pin a spent room forever.
+      const joinedHuman = [...this.peers].some(
+        (item) => !item.isBot && item.memberId && this.member(item.memberId)?.agentActive,
+      );
       const openedFor = Date.now() - this.state.incidentStartedAt * 1_000;
       const spent = this.state.phase === "resolved" || openedFor > 30 * 60 * 1_000;
-      if (spent && watchers <= 1) this.restartIncident();
+      if (spent && !joinedHuman) this.restartIncident();
       this.ensureStatusTimer();
       this.armBot();
     }
