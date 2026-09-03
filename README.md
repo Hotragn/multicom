@@ -183,12 +183,16 @@ production client reports a live room, all 12 tools register, and opening the
 demo link with no agent shows the live incident with the house responder.
 
 **One step is outstanding.** The room Worker has no `TARGET_TOKEN`, so the target
-rejects its action calls with 403 and `apply_mitigation` fails live. Set it to the
-same value the target Worker holds, then re-run the live checklist:
+rejects its action calls with 403 and `apply_mitigation` fails live. Both Workers
+need the same value; this generates one and sets it on both, without printing it:
 
 ```bash
-cd worker && npx wrangler secret put TARGET_TOKEN
+node tools/set-target-token.mjs
 ```
+
+Use that rather than piping a value through a shell. A trailing newline ends up
+inside the `Authorization` header the room sends, and the resulting failure looks
+like an unreachable service rather than a bad secret.
 
 The commander capability is intentionally not published. Use the private commander link from the deployment session for the human approval step.
 
