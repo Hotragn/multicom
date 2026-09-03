@@ -30,6 +30,15 @@ export interface Hypothesis {
   title: string;
   evidence: string;
   confidence: number;
+  /**
+   * The confidence this hypothesis was first posted at, present only once its
+   * author has revised it. Kept alongside the current value rather than
+   * replacing it, because "92% then 20% after the rebuttal" is the evidence
+   * that deliberation happened; a single number cannot show a mind changing.
+   */
+  openedAt?: number;
+  /** The author's stated reason for the revision, if they gave one. */
+  revisedBecause?: string;
   rebuttals: Rebuttal[];
   votes: Record<string, VoteChoice>;
   rationales: VoteRationales;
@@ -78,6 +87,13 @@ export type ClientMessage =
   | { type: "run_check"; requestId: string; checkId: CheckId }
   | { type: "propose_hypothesis"; requestId: string; title: string; evidence: string; confidence: number }
   | { type: "counter"; requestId: string; hypothesisId: string; evidence: string }
+  | {
+      type: "revise";
+      requestId: string;
+      hypothesisId: string;
+      confidence: number;
+      because?: string;
+    }
   | { type: "propose_mitigation"; requestId: string; hypothesisId: string; actionId: ActionId; blastRadius: string }
   | { type: "vote"; requestId: string; targetId: string; choice: VoteChoice }
   | { type: "explain_vote"; requestId: string; targetId: string; rationale: string }
@@ -98,6 +114,7 @@ export type ToolResultData =
   | { kind: "check"; result: CheckResult }
   | { kind: "hypothesis"; hypothesisId: string }
   | { kind: "counter"; hypothesisId: string }
+  | { kind: "revision"; hypothesisId: string; confidence: number; openedAt: number }
   | { kind: "mitigation"; mitigationId: string }
   | { kind: "vote"; yes: number; no: number; passed: boolean }
   | { kind: "rationale"; targetId: string; count: number }

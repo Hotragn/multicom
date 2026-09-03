@@ -402,7 +402,7 @@ multicom/
    within 10 seconds, in every connected tab.
 5. Applying `rollback:deploy-1f3a` does NOT resolve — status stays red.
 6. `?demo=1`: bot joins ≤3s, red-herring hypothesis lands ≤10s.
-7. Exactly 12 tools register; each description under 120 characters.
+7. Exactly the tools in `TOOL_NAMES` register; each description under 120 characters.
    (Was 11. `explain_vote` was added after a drill in which two agents could
    only register a bare "no" on a mitigation they objected to; see
    `docs/AGENT-DRILL.md`.)
@@ -411,7 +411,7 @@ multicom/
 
    Verified through Chrome rather than ChatGPT desktop, by decision on
    2026-09-03. Chrome 152 with `chrome://flags/#enable-webmcp-testing` enabled
-   exposes the API natively and the deployed page registers all 12 tools into
+   exposes the API natively and the deployed page registers every tool into
    it; with the flag off the same page falls back to the MCP-B polyfill. Both
    halves of that A/B are recorded in `docs/webmcp-chrome-report.json` and
    reproduced by `tools/chrome-webmcp-check.mjs`.
@@ -549,7 +549,7 @@ returns the curated room with `degraded: "capacity"` rather than an error. A
 A judge on stock Safari, or on Chrome without the flag, previously hit a wall
 that said "open this page in a browser with a WebMCP agent". Now:
 
-1. **Bring your own agent** — the twelve tools, with the count actually detected
+1. **Bring your own agent** — the full tool surface, with the count actually detected
    and whether it was native or the MCP-B polyfill.
 2. **Drive it myself** — real operator controls that call the same
    `RoomClient` methods the tools call, over the same messages, through the same
@@ -593,7 +593,7 @@ Added to §17:
 17. The hero visualization reaches WebGL, and the room is fully workable with
     the 3D chunk blocked.
 
-Criterion 7 is unchanged: still exactly 12 tools, same names, same input
+Criterion 7 now reads off `TOOL_NAMES` rather than a literal: same names, same input
 schemas. Only the twelve description strings changed, to state the result
 envelope (§10.1), plus an additive `outputSchema` per tool.
 

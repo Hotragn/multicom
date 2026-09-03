@@ -137,6 +137,7 @@ const MAX_REQUEST_RECORDS_PER_MEMBER = 64;
 const MUTATING_REQUESTS = new Set<ClientMessage["type"]>([
   "propose_hypothesis",
   "counter",
+  "revise",
   "propose_mitigation",
   "vote",
   "explain_vote",
@@ -412,6 +413,9 @@ export class Room extends DurableObject<RoomEnv> {
         case "counter":
           await this.counterHypothesis(session, message.hypothesisId, message.evidence, requestId);
           return;
+        case "revise":
+          await this.reviseHypothesis(session, message, requestId);
+          return;
         case "propose_mitigation":
           await this.proposeMitigation(session, message.hypothesisId, String(message.actionId), message.blastRadius, requestId);
           return;
@@ -553,6 +557,58 @@ export class Room extends DurableObject<RoomEnv> {
     this.addActivity(`${this.memberName(session)} challenged ${truncate(hypothesis.title, 64)}.`);
     await this.persistAndBroadcast(true);
     this.sendToolResult(session, requestId, { kind: "counter", hypothesisId });
+  }
+
+  /**
+   * Let an author move their own confidence as the evidence lands.
+   *
+   * Author-only on purpose. Anyone may contradict a theory with
+   * `counter_hypothesis`; only the person who staked a number on it may restate
+   * that number, so the board cannot be edited out from under its author. The
+   * opening value is kept in `openedAt` rather than overwritten, because "92%,
+   * then 20% once the timeline landed" is the visible evidence that a mind
+   * changed — a single current number shows nothing.
+   */
+  private async reviseHypothesis(
+    session: Session,
+    message: Extract<ClientMessage, { type: "revise" }>,
+    requestId: string,
+  ): Promise<void> {
+    if (!this.ensureMutable(session, requestId)) return;
+    const hypothesis = this.room.state.hypotheses.find(
+      (candidate) => candidate.id === message.hypothesisId,
+    );
+    if (!hypothesis) {
+      this.fail(session, "not_found", "That hypothesis does not exist.", requestId);
+      return;
+    }
+    if (hypothesis.by !== session.memberId) {
+      this.fail(
+        session,
+        "not_author",
+        "Only the author may revise a theory. Use counter_hypothesis to challenge it.",
+        requestId,
+      );
+      return;
+    }
+
+    const openedAt = hypothesis.openedAt ?? hypothesis.confidence;
+    hypothesis.openedAt = openedAt;
+    hypothesis.confidence = message.confidence;
+    if (message.because) hypothesis.revisedBecause = truncate(message.because, MAX_RATIONALE);
+    else delete hypothesis.revisedBecause;
+
+    const direction = message.confidence < openedAt ? "down" : "up";
+    this.addActivity(
+      `${this.memberName(session)} revised ${truncate(hypothesis.title, 48)} ${direction} to ${message.confidence.toFixed(2)}.`,
+    );
+    await this.persistAndBroadcast(true);
+    this.sendToolResult(session, requestId, {
+      kind: "revision",
+      hypothesisId: hypothesis.id,
+      confidence: message.confidence,
+      openedAt,
+    });
   }
 
   private async proposeMitigation(

@@ -1,4 +1,5 @@
 import { SERVICE_NAME } from "../../shared/scenario";
+import { TOOL_NAMES } from "../../shared/tools";
 import type { RoomState, ServiceStatus } from "../../shared/ws-messages";
 import { element, setText, textElement } from "./dom";
 import { formatElapsed, heroHeadline, phaseLabel } from "./format";
@@ -21,7 +22,7 @@ export interface HeroSection {
 const TIER_COPY: Record<ParticipationTier, { label: string; detail: string }> = {
   agent: {
     label: "Agent connected",
-    detail: "Your browser agent holds the twelve room tools.",
+    detail: `Your browser agent holds all ${TOOL_NAMES.length} room tools.`,
   },
   manual: {
     label: "Driving it yourself",

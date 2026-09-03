@@ -6,6 +6,7 @@ export const TOOL_NAMES = [
   "run_check",
   "propose_hypothesis",
   "counter_hypothesis",
+  "revise_hypothesis",
   "propose_mitigation",
   "vote",
   "explain_vote",
@@ -53,6 +54,7 @@ export interface ToolParams {
     confidence: number;
   };
   counter_hypothesis: { hypothesisId: string; evidence: string };
+  revise_hypothesis: { hypothesisId: string; confidence: number; because?: string };
   propose_mitigation: {
     hypothesisId: string;
     actionId: ActionId;
@@ -90,6 +92,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   run_check: "Run one read-only diagnostic. Returns {kind:'check', result} shaped by checkId.",
   propose_hypothesis: "Add a root-cause theory with cited evidence. Returns {kind:'hypothesis', hypothesisId}.",
   counter_hypothesis: "Challenge a theory with contradicting evidence. Returns {kind:'counter', hypothesisId}.",
+  revise_hypothesis: "Revise your own theory as evidence lands. Returns {kind:'revision', hypothesisId, confidence, openedAt}.",
   propose_mitigation: "Propose a fix from the fixed action library. Returns {kind:'mitigation', mitigationId}.",
   vote: "Vote yes or no; a majority of active members passes it. Returns {kind:'vote', yes, no, passed}.",
   explain_vote: "Say why you voted as you did. Returns {kind:'rationale', targetId, count} of all reasons on that target.",

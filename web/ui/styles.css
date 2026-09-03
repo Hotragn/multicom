@@ -1284,6 +1284,38 @@ circle.mc-timeline__head {
   font-size: 0.75rem;
 }
 
+/*
+ * A revised confidence shows the movement, not just the current number: the
+ * opening value struck through beside the new one. "92% 20%" is the evidence
+ * that somebody changed their mind, which a single figure cannot carry.
+ */
+.mc-confidence__movement {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.mc-confidence__from {
+  color: var(--mc-faint);
+  font-weight: 400;
+  text-decoration-thickness: 1px;
+}
+
+.mc-confidence__revision {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  color: var(--mc-muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.mc-confidence__revision .mc-icon {
+  color: var(--mc-warning);
+  margin-top: 0.15rem;
+}
+
 .mc-confidence__meter {
   width: 100%;
   height: 0.4rem;

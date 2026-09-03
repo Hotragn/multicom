@@ -13,6 +13,11 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
+// Mirrors TOOL_NAMES.length in shared/tools.ts. This file runs under a bare
+// `node`, which cannot import the TypeScript contract; a unit test asserts the
+// two never drift apart.
+const EXPECTED_TOOLS = 13;
+
 const repo = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
 
 const flag = (name) => process.argv.includes(name);
@@ -88,7 +93,7 @@ async function newAgentPage(search) {
 
 async function waitForTools(page) {
   await page.waitForFunction(
-    () => Object.keys(window.__tools ?? {}).length === 12,
+    () => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS,
     null,
     { timeout: 30_000 },
   );

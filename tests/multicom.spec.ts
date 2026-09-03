@@ -149,7 +149,7 @@ test("registers the exact WebMCP surface once with bounded descriptions", async 
   })));
 
   expect(tools.map((tool) => tool.name)).toEqual([...TOOL_NAMES]);
-  expect(tools).toHaveLength(12);
+  expect(tools).toHaveLength(TOOL_NAMES.length);
   expect(tools.every((tool) => tool.description.length < 120)).toBe(true);
   expect(tools.find((tool) => tool.name === "query_logs")?.annotations).toMatchObject({
     readOnlyHint: true,
@@ -886,7 +886,9 @@ test("room provisioning is rate limited and room_full offers a way out", async (
 
     await seventh.getByTestId("notice-action").click();
     await seventh.waitForURL(/[?&]room=r[a-z2-7]{20}/, { timeout: 15_000 });
-    await expect.poll(() => seventh.evaluate(() => Object.keys(window.__multicomTools ?? {}).length)).toBe(12);
+    await expect
+      .poll(() => seventh.evaluate(() => Object.keys(window.__multicomTools ?? {}).length))
+      .toBe(TOOL_NAMES.length);
     await join(seventh, "Seventh judge", "commander");
   } finally {
     for (const client of clients) client.close();
@@ -1015,7 +1017,7 @@ test("the judge console only ticks a row that really happened, and exports no se
       "data-passed",
       "true",
     );
-    await expect(page.locator('[data-rubric-id="tool-surface"]')).toContainText("12 tools detected");
+    await expect(page.locator('[data-rubric-id="tool-surface"]')).toContainText(`${TOOL_NAMES.length} tools detected`);
 
     await join(page, "Priya", "commander");
     const responder = await responderContext.newPage();
@@ -1383,5 +1385,79 @@ test("a room with no commander refuses approval and says how to fix it", async (
     expect(await finishPending<ToolData>(first)).toMatchObject({ approved: true });
   } finally {
     await context.close();
+  }
+});
+
+test("an author can move their own confidence, and only their own", async ({ browser }) => {
+  const first = await browser.newContext();
+  const second = await browser.newContext();
+  try {
+    const room = await provisionRoom();
+    const author = await newRoomPage(first, room);
+    const peer = await newRoomPage(second, room);
+    await join(author, "Arjun", "commander");
+    await join(peer, "Mei", "responder");
+
+    const flag = await callTool<ToolData>(author, "propose_hypothesis", {
+      title: "The new-checkout flag caused the errors",
+      evidence: "The flag changed this morning and checkout is failing.",
+      confidence: 0.92,
+    });
+    await expect(peer.getByTestId("hypothesis-card")).toContainText("92%");
+
+    // Someone else's theory is not yours to restate. That is what
+    // counter_hypothesis is for, and the refusal says so.
+    const notMine = await callTool<ToolFailure>(peer, "revise_hypothesis", {
+      hypothesisId: flag.hypothesisId as string,
+      confidence: 0.1,
+    });
+    expect(notMine.error.code).toBe("not_author");
+    await expect(peer.getByTestId("hypothesis-card")).toContainText("92%");
+
+    // The rebuttal lands, and the author concedes by moving the number.
+    await callTool(peer, "counter_hypothesis", {
+      hypothesisId: flag.hypothesisId as string,
+      evidence: "error_timeline shows errors starting before the flag was enabled.",
+    });
+    const revised = await callTool<ToolData>(author, "revise_hypothesis", {
+      hypothesisId: flag.hypothesisId as string,
+      confidence: 0.2,
+      because: "Mei is right — the timeline predates the flag.",
+    });
+    expect(revised).toMatchObject({
+      kind: "revision",
+      hypothesisId: flag.hypothesisId,
+      confidence: 0.2,
+      openedAt: 0.92,
+    });
+
+    // Both numbers reach the other browser, so the movement is the evidence.
+    const card = peer.getByTestId("hypothesis-card");
+    await expect(card).toContainText("92%");
+    await expect(card).toContainText("20%");
+    await expect(card).toContainText("Mei is right");
+    await expect(peer.getByTestId("activity-list")).toContainText("revised");
+
+    // Revising is a write, so a resolved room refuses it like any other.
+    const hypothesisId = await hypothesis(author, "DB pool cut to one by deploy 1f3a");
+    const fix = await mitigation(author, hypothesisId, "scale_pool:default");
+    await callTool(author, "vote", { targetId: fix, choice: "yes" });
+    await callTool(peer, "vote", { targetId: fix, choice: "yes" });
+    await beginConfirmation(peer, fix);
+    await expect(author.getByTestId("confirm-dialog")).toBeVisible();
+    await author.getByTestId("approve-mitigation").click();
+    await finishPending(peer);
+    await callTool(peer, "apply_mitigation", { actionId: "scale_pool:default" });
+    await expect
+      .poll(() => author.getByTestId("room-phase").textContent(), { timeout: 15_000 })
+      .toBe("Resolved");
+    const locked = await callTool<ToolFailure>(author, "revise_hypothesis", {
+      hypothesisId: flag.hypothesisId as string,
+      confidence: 0.5,
+    });
+    expect(locked.error.code).toBe("room_resolved");
+  } finally {
+    await first.close();
+    await second.close();
   }
 });

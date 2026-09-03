@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { TOOL_NAMES } from "../../shared/tools";
 
 declare global {
   interface Window {
@@ -27,7 +28,11 @@ export async function installWebMcpCapture(page: Page): Promise<void> {
 }
 
 export async function waitForTools(page: Page): Promise<void> {
-  await expect.poll(() => page.evaluate(() => Object.keys(window.__multicomTools ?? {}).length)).toBe(12);
+  // From the contract, not a literal: a thirteenth tool should not need a
+  // grep across the suite to be believed.
+  await expect
+    .poll(() => page.evaluate(() => Object.keys(window.__multicomTools ?? {}).length))
+    .toBe(TOOL_NAMES.length);
 }
 
 export async function callTool<T = unknown>(page: Page, name: string, input: unknown): Promise<T> {

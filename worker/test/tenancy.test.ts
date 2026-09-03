@@ -133,3 +133,21 @@ describe("tool scripts agree with the contract", () => {
     expect(source).toContain(`const TENANT_HEADER = "${TENANT_HEADER}"`);
   });
 });
+
+// The .mjs tools cannot import the TypeScript contract, so each keeps its own
+// copy of the tool count. Same drift hazard as TENANT_HEADER above.
+describe("tool scripts agree with the tool count", () => {
+  it("every Node script expects exactly as many tools as the contract declares", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { TOOL_NAMES } = await import("../../shared/tools");
+    for (const script of [
+      "agent-drill.mjs",
+      "agent-session.mjs",
+      "live-acceptance.mjs",
+      "prod-smoke.mjs",
+    ]) {
+      const source = await readFile(new URL(`../../tools/${script}`, import.meta.url), "utf8");
+      expect(source, script).toContain(`const EXPECTED_TOOLS = ${TOOL_NAMES.length}`);
+    }
+  });
+});

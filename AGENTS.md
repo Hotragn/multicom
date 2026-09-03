@@ -52,7 +52,7 @@ Do not mark work complete by description. Mark it complete by gate.
      each tool's exact result envelope (`SPEC.md` §10.1). The payload key
      differs per result variant, and an agent that guessed wrong got
      `undefined` with no error. No tool name, input schema, action-library
-     entry, or message type changed; there are still exactly 12 tools.
+     entry, or message type changed.
 
    Still frozen: `shared/ws-messages.ts` and `shared/scenario.ts`. The result
    union's shapes were deliberately left alone — renaming payload keys would

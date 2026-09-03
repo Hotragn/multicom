@@ -7,6 +7,11 @@
 import { createServer } from "node:http";
 import { chromium } from "playwright";
 
+// Mirrors TOOL_NAMES.length in shared/tools.ts. This file runs under a bare
+// `node`, which cannot import the TypeScript contract; a unit test asserts the
+// two never drift apart.
+const EXPECTED_TOOLS = 13;
+
 const arg = (flag, fallback) => {
   const at = process.argv.indexOf(flag);
   return at === -1 ? fallback : process.argv[at + 1];
@@ -38,7 +43,7 @@ await page.addInitScript(() => {
 const query = new URLSearchParams({ room });
 if (commander) query.set("commander", commander);
 await page.goto(`${appOrigin}/?${query.toString()}`);
-await page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === 12, null, { timeout: 20_000 });
+await page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS, null, { timeout: 20_000 });
 
 if (autoJoin) {
   const [name, role = "responder"] = autoJoin.split(":");

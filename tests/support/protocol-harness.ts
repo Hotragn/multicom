@@ -219,6 +219,7 @@ class HarnessRoom {
   private isMutation(message: ClientMessage): boolean {
     return message.type === "propose_hypothesis" ||
       message.type === "counter" ||
+      message.type === "revise" ||
       message.type === "propose_mitigation" ||
       message.type === "vote" ||
       message.type === "request_confirm" ||
@@ -289,6 +290,9 @@ class HarnessRoom {
         return;
       case "counter":
         this.counter(peer, message.requestId, message.hypothesisId, message.evidence);
+        return;
+      case "revise":
+        this.revise(peer, message);
         return;
       case "propose_mitigation":
         this.proposeMitigation(peer, message.requestId, message.hypothesisId, String(message.actionId), message.blastRadius);
@@ -365,6 +369,38 @@ class HarnessRoom {
     this.activity(`${this.name(peer)} challenged ${truncate(hypothesis.title, 64)}.`);
     this.broadcastState();
     this.result(peer, requestId, { kind: "counter", hypothesisId });
+  }
+
+  // Mirrors Room.reviseHypothesis, including the author-only rule. A harness
+  // more permissive than the product would let a real gate rot untested.
+  private revise(peer: Peer, message: Extract<ClientMessage, { type: "revise" }>): void {
+    if (!this.mutable(peer, message.requestId)) return;
+    const hypothesis = this.state.hypotheses.find((item) => item.id === message.hypothesisId);
+    if (!hypothesis) return this.error(peer, message.requestId, "not_found", "Hypothesis not found.");
+    if (hypothesis.by !== peer.memberId) {
+      return this.error(
+        peer,
+        message.requestId,
+        "not_author",
+        "Only the author may revise a theory.",
+      );
+    }
+    const openedAt = hypothesis.openedAt ?? hypothesis.confidence;
+    hypothesis.openedAt = openedAt;
+    hypothesis.confidence = message.confidence;
+    if (message.because) hypothesis.revisedBecause = truncate(message.because, 240);
+    else delete hypothesis.revisedBecause;
+    const direction = message.confidence < openedAt ? "down" : "up";
+    this.activity(
+      `${this.name(peer)} revised ${truncate(hypothesis.title, 48)} ${direction} to ${message.confidence.toFixed(2)}.`,
+    );
+    this.broadcastState();
+    this.result(peer, message.requestId, {
+      kind: "revision",
+      hypothesisId: hypothesis.id,
+      confidence: message.confidence,
+      openedAt,
+    });
   }
 
   private proposeMitigation(peer: Peer, requestId: string, hypothesisId: string, rawActionId: string, blastRadius: string): void {

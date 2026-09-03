@@ -93,6 +93,20 @@ function enumValue<T extends string>(
   return candidate as T;
 }
 
+/** The 0..1 confidence rule, shared by propose_hypothesis and revise_hypothesis. */
+function confidenceValue(value: UnknownRecord, key: string): number {
+  const candidate = value[key];
+  if (
+    typeof candidate !== "number" ||
+    !Number.isFinite(candidate) ||
+    candidate < 0 ||
+    candidate > 1
+  ) {
+    throw new ToolInputError(`${key} must be a finite number from 0 to 1.`);
+  }
+  return candidate;
+}
+
 function idValue(value: UnknownRecord, key: string): string {
   const id = stringValue(value, key, LIMITS.id);
   if (!/^[A-Za-z0-9_-]+$/.test(id)) {
@@ -140,19 +154,10 @@ export function validateToolInput<K extends ToolName>(
     }
     case "propose_hypothesis": {
       exactKeys(args, ["title", "evidence", "confidence"]);
-      const confidence = args.confidence;
-      if (
-        typeof confidence !== "number" ||
-        !Number.isFinite(confidence) ||
-        confidence < 0 ||
-        confidence > 1
-      ) {
-        throw new ToolInputError("confidence must be a finite number from 0 to 1.");
-      }
       return {
         title: stringValue(args, "title", LIMITS.title),
         evidence: stringValue(args, "evidence", LIMITS.evidence),
-        confidence,
+        confidence: confidenceValue(args, "confidence"),
       } as ToolParams[K];
     }
     case "counter_hypothesis": {
@@ -161,6 +166,17 @@ export function validateToolInput<K extends ToolName>(
         hypothesisId: idValue(args, "hypothesisId"),
         evidence: stringValue(args, "evidence", LIMITS.evidence),
       } as ToolParams[K];
+    }
+    case "revise_hypothesis": {
+      exactKeys(args, ["hypothesisId", "confidence"], ["because"]);
+      const revision: Record<string, unknown> = {
+        hypothesisId: idValue(args, "hypothesisId"),
+        confidence: confidenceValue(args, "confidence"),
+      };
+      if (args.because !== undefined) {
+        revision.because = stringValue(args, "because", LIMITS.rationale);
+      }
+      return revision as ToolParams[K];
     }
     case "propose_mitigation": {
       exactKeys(args, ["hypothesisId", "actionId", "blastRadius"]);

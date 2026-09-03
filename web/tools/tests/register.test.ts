@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { TOOL_NAMES } from "../../../shared/tools.ts";
 import { RoomClient } from "../room-client.ts";
 import { detectModelContext, registerWarRoomToolsOnce } from "../register.ts";
 import type { ModelContextLike, ModelContextTool } from "../webmcp-types.ts";
@@ -82,8 +83,8 @@ test("initializes the polyfill before detection and registers once after load", 
   listeners.get("load")?.({});
   const result = await first;
   assert.equal(initialized, true);
-  assert.deepEqual(result, { status: "registered", count: 12 });
-  assert.equal(tools.length, 12);
+  assert.deepEqual(result, { status: "registered", count: TOOL_NAMES.length });
+  assert.equal(tools.length, TOOL_NAMES.length);
 });
 
 test("absence of both modelContext surfaces is a graceful no-op", async () => {

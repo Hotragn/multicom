@@ -308,6 +308,7 @@ export function mountWarRoom(
       room: model.room,
       joined: model.joined,
       open: model.manualOpen,
+      memberId: model.memberId,
     });
     renderJudge();
     shell.approval.render({

@@ -176,6 +176,32 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, JsonSchema> = {
     required: ["hypothesisId", "evidence"],
     additionalProperties: false,
   },
+  revise_hypothesis: {
+    type: "object",
+    properties: {
+      hypothesisId: {
+        ...ID_SCHEMA,
+        description:
+          "One of YOUR OWN hypotheses, from get_room_state. Revising someone else's fails with not_author — challenge theirs with counter_hypothesis instead.",
+      },
+      confidence: {
+        type: "number",
+        minimum: 0,
+        maximum: 1,
+        description:
+          "Your confidence NOW, 0 to 1, after weighing what has landed since you posted. Lower it when a rebuttal holds; raise it when a check confirms you. The room keeps your opening number and shows the movement, so conceding is visible work rather than a lost argument.",
+      },
+      because: {
+        type: "string",
+        minLength: 1,
+        maxLength: TOOL_INPUT_LIMITS.rationale,
+        description:
+          "Optional. Which specific evidence moved you. Cite the rebuttal or the check by name so the room can follow the reasoning.",
+      },
+    },
+    required: ["hypothesisId", "confidence"],
+    additionalProperties: false,
+  },
   propose_mitigation: {
     type: "object",
     properties: {
@@ -340,6 +366,11 @@ export const TOOL_OUTPUT_SCHEMAS: Record<ToolName, JsonSchema> = {
   }),
   propose_hypothesis: envelope("hypothesis", { hypothesisId: { type: "string" } }),
   counter_hypothesis: envelope("counter", { hypothesisId: { type: "string" } }),
+  revise_hypothesis: envelope("revision", {
+    hypothesisId: { type: "string" },
+    confidence: { type: "number" },
+    openedAt: { type: "number" },
+  }),
   propose_mitigation: envelope("mitigation", { mitigationId: { type: "string" } }),
   vote: envelope("vote", {
     yes: { type: "number" },
@@ -406,6 +437,15 @@ async function executeTool<K extends ToolName>(
       case "counter_hypothesis": {
         const params = input as ToolParams["counter_hypothesis"];
         result = await client.counterHypothesis(params.hypothesisId, params.evidence);
+        break;
+      }
+      case "revise_hypothesis": {
+        const params = input as ToolParams["revise_hypothesis"];
+        result = await client.reviseHypothesis(
+          params.hypothesisId,
+          params.confidence,
+          params.because,
+        );
         break;
       }
       case "propose_mitigation": {

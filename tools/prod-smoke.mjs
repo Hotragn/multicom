@@ -3,6 +3,11 @@
 // it does not consume the room-creation budget.
 import { chromium } from "playwright";
 
+// Mirrors TOOL_NAMES.length in shared/tools.ts. This file runs under a bare
+// `node`, which cannot import the TypeScript contract; a unit test asserts the
+// two never drift apart.
+const EXPECTED_TOOLS = 13;
+
 const APP = process.argv[2] ?? "https://multicom-web.pages.dev";
 let failures = 0;
 const check = (pass, label, detail = "") => {
@@ -33,11 +38,11 @@ await page.goto(`${APP}/?demo=1`, { waitUntil: "domcontentloaded" });
 const toolCount = await page
   .waitForFunction(() => {
     const n = Object.keys(window.__tools ?? {}).length;
-    return n === 12 ? n : null;
+    return n === EXPECTED_TOOLS ? n : null;
   }, null, { timeout: 30_000 })
   .then((h) => h.jsonValue())
   .catch(() => 0);
-check(toolCount === 12, "12 tools register on the deployed page", String(toolCount));
+check(toolCount === EXPECTED_TOOLS, `${EXPECTED_TOOLS} tools register on the deployed page`, String(toolCount));
 
 const live = await page
   .waitForFunction(

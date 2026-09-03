@@ -45,7 +45,7 @@ live board. The isolation is from other judges, not from my own team.”
 **0:22–0:32 — Native agent access**
 
 Reveal the browser's registered WebMCP tools. Show `join_room` and
-`get_service_status` being called. Say: “The page exposes twelve narrow tools to
+`get_service_status` being called. Say: “The page exposes thirteen narrow tools to
 the browser itself. No copy-paste, no hidden backend integration.”
 
 **0:32–0:52 — Evidence, and a theory that loses**
@@ -60,7 +60,7 @@ the one that fits the timeline.”
 
 Propose `scale_pool:default`, vote from both windows, request confirmation. Hold
 on the approval overlay: the action id, the blast radius, who voted and why, the
-countdown. Say: “Agents can argue, vote, and ask. Not one of the twelve tools
+countdown. Say: “Agents can argue, revise, vote, and ask. Not one of the thirteen tools
 can produce this approval. It takes my click.” Click **Approve**.
 
 **1:12–1:24 — Verify**
@@ -85,7 +85,7 @@ a multiplayer incident room built directly on WebMCP.”
 - The approval overlay: action id, blast radius, voters, countdown
 - Both windows resolved together at 1%
 - The judge console rubric and run summary
-- The browser tool list showing exactly 12 tools
+- The browser tool list showing exactly 13 tools
 
 ## What not to claim
 

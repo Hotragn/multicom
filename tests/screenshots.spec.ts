@@ -134,6 +134,18 @@ test("captures the war room, the debate, the approval and the resolution", async
       responder.locator('[data-testid="hypothesis-card"][data-red-herring="true"]'),
     ).toContainText("Challenged");
 
+    // The author concedes by moving their own number. This is the beat the
+    // board could not show before: 35% struck through, 10% beside it, and the
+    // reason underneath. A rebuttal alone leaves the original figure standing.
+    await callTool(responder, "revise_hypothesis", {
+      hypothesisId: flag.hypothesisId,
+      confidence: 0.1,
+      because: "The timeline predates the flag — Priya is right, this is not causal.",
+    });
+    await expect(
+      responder.locator('[data-testid="hypothesis-card"][data-red-herring="true"]'),
+    ).toContainText("10%");
+
     const mitigation = await callTool<{ mitigationId: string }>(responder, "propose_mitigation", {
       hypothesisId: real.hypothesisId,
       actionId: "scale_pool:default",

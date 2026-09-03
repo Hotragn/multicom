@@ -12,6 +12,11 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
+// Mirrors TOOL_NAMES.length in shared/tools.ts. This file runs under a bare
+// `node`, which cannot import the TypeScript contract; a unit test asserts the
+// two never drift apart.
+const EXPECTED_TOOLS = 13;
+
 // Mirrors shared/tenancy.ts. This file is plain .mjs so it can run under a bare
 // `node`, which cannot import the TypeScript source. A unit test asserts the
 // two never drift apart.
@@ -79,7 +84,7 @@ const newContextPage = async () => {
 };
 
 const waitForTools = (page) =>
-  page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === 12, null, {
+  page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS, null, {
     timeout: 30_000,
   });
 
@@ -168,7 +173,7 @@ const openPage = async (isCommander) => {
 const commander = await openPage(true);
 const alice = await openPage(false);
 const bob = await openPage(false);
-check("12 tools register on the real page", true);
+check(`${EXPECTED_TOOLS} tools register on the real page`, true);
 
 // Nobody may write before joining.
 const preJoin = await call(alice, "propose_hypothesis", { title: "before joining", evidence: "x".repeat(40), confidence: 0.5 });

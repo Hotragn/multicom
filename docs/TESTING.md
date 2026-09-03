@@ -23,12 +23,12 @@ multi-agent drill.
 
 | Behaviour | Automated proof |
 | --- | --- |
-| Exact WebMCP surface | 12 tools, bounded descriptions, annotations, published output schemas, no iframe |
+| Exact WebMCP surface | 13 tools, bounded descriptions, annotations, published output schemas, no iframe |
 | Real-time room | Hypothesis reaches a second browser context in under 300 ms |
 | Untrusted logs | Injection trap stays literal and below 2 KB |
 | Safe rendering | Hostile `<img onerror>` text creates no image and runs no script |
 | Decision gate | Non-passed, unapproved, invented, expired and replayed actions fail safely |
-| **Agent cannot self-approve** | An agent holding the commander seat, with no human in the room, cannot produce an approval through any of the twelve tools; only a click on Approve moves the gate |
+| **Agent cannot self-approve** | An agent holding the commander seat, with no human in the room, cannot produce an approval through any of the thirteen tools; only a click on Approve moves the gate |
 | Recovery | `scale_pool:default` reaches <2% errors and resolved state in both tabs within 10 seconds |
 | **Room isolation** | Resolving one room leaves another room at 23% and not resolved, then that room still runs its own incident to recovery |
 | **Concurrent judges** | Three rooms live at once, each completing independently, none seeing another's board |
@@ -126,7 +126,7 @@ curl -s https://multicom-web.pages.dev/ | grep -o 'index-[A-Za-z0-9_-]*\.js'
 
 | Pass | Result |
 | --- | --- |
-| `npm run smoke:prod` | 9/9 — twelve tools, live `wss`, real fault metrics at 23%, `data-viz=webgl`, onboarding tiers, lobby at the bare URL, no console errors |
+| `npm run smoke:prod` | 9/9 — thirteen tools, live `wss`, real fault metrics at 23%, `data-viz=webgl`, onboarding tiers, lobby at the bare URL, no console errors |
 | `npm run verify:prod` | **32/32, no skips** — including the commander seat claimed with no capability, a real click on the real overlay, recovery in 7.2s, and a bystander room still at 23.0% |
 
 The morning pass against room `77a76fa0` / target `01495519` is superseded by
@@ -156,7 +156,7 @@ with a stated reason, a human approval, an apply, recovery in every browser, and
 safety checks.
 
 **The personas are scripted, not agents.** Each is a real browser context with
-the real twelve tools registered, and every call goes through the real client and
+the real thirteen tools registered, and every call goes through the real client and
 the real room — but the script chooses what to call and writes the hypothesis
 text. No language model reasons about anything. What this proves is that the
 protocol, the gates and the interface hold up with several participants acting

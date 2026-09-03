@@ -300,7 +300,19 @@ function renderHypothesisThread(
   const confidence = element("div", "mc-confidence");
   const confidenceHeader = element("div", "mc-confidence__header");
   confidenceHeader.append(textElement("span", "", "Stated confidence"));
-  confidenceHeader.append(textElement("strong", "", formatConfidence(hypothesis.confidence)));
+  // A single number cannot show a mind changing. When the author has revised,
+  // render the opening value struck through beside the current one, so the
+  // movement is the thing a reader sees.
+  const revised = hypothesis.openedAt !== undefined && hypothesis.openedAt !== hypothesis.confidence;
+  if (revised) {
+    const movement = element("strong", "mc-confidence__movement");
+    const from = textElement("s", "mc-confidence__from", formatConfidence(hypothesis.openedAt!));
+    movement.append(from);
+    movement.append(document.createTextNode(` ${formatConfidence(hypothesis.confidence)}`));
+    confidenceHeader.append(movement);
+  } else {
+    confidenceHeader.append(textElement("strong", "", formatConfidence(hypothesis.confidence)));
+  }
   const meter = element("meter", "mc-confidence__meter");
   meter.min = 0;
   meter.max = 1;
@@ -310,6 +322,19 @@ function renderHypothesisThread(
   meter.value = clamp(hypothesis.confidence, 0, 1);
   meter.setAttribute("aria-label", `Confidence ${formatConfidence(hypothesis.confidence)}`);
   confidence.append(confidenceHeader, meter);
+  if (revised) {
+    const note = element("p", "mc-confidence__revision");
+    note.append(icon("rebuttal"));
+    const direction = hypothesis.confidence < hypothesis.openedAt! ? "down" : "up";
+    note.append(
+      document.createTextNode(
+        hypothesis.revisedBecause
+          ? `${memberName(room, hypothesis.by)} revised ${direction}: ${hypothesis.revisedBecause}`
+          : `${memberName(room, hypothesis.by)} revised ${direction} after the evidence landed.`,
+      ),
+    );
+    confidence.append(note);
+  }
 
   const steps = element("ol", "mc-steps");
 

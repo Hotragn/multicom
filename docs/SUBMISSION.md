@@ -6,7 +6,7 @@ This is working copy for the project page. Replace every `TODO` only with verifi
 
 **How does your project use WebMCP?**
 
-The room page registers twelve imperative WebMCP tools after load, feature-detecting `navigator.modelContext` then `document.modelContext`. They cover service status, checks, logs, hypotheses, rebuttals, mitigations, votes with rationales, and human confirmation. Every call travels the room's WebSocket with a request ID, and the server owns voting, approval, and idempotency. Log results are marked untrusted, and every result stays under 2 KB.
+The room page registers thirteen imperative WebMCP tools after load, feature-detecting `navigator.modelContext` then `document.modelContext`. They cover service status, checks, logs, hypotheses, rebuttals, revising your own confidence, mitigations, votes with rationales, and human confirmation. Every call travels the room's WebSocket with a request ID, and the server owns voting, approval, and idempotency. Log results are marked untrusted, and every result stays under 2 KB.
 
 **Why is this a better user experience?**
 
@@ -137,7 +137,7 @@ Two limitations from the earlier build are now fixed rather than documented. The
 - [x] Professional README, security notes, and demo plan
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
 - [x] Hosted frontend URL
-- [x] Live browser acceptance pass (room connection live; 12 WebMCP tools visible)
+- [x] Live browser acceptance pass (room connection live; 13 WebMCP tools visible)
 - [x] Live cold-open pass (demo link shows the incident with no agent attached)
 - [x] `apply_mitigation` verified end to end against real Workers: all 32 checks pass, ending in a
       real approval click with no secret, an apply against the live target, recovery in three

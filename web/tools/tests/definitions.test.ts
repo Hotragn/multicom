@@ -29,10 +29,10 @@ function unusedClient(): RoomClient {
   });
 }
 
-test("registers exactly the 12-tool definition set", () => {
+test("registers exactly the declared tool set", () => {
   const definitions = createToolDefinitions(unusedClient());
   assert.deepEqual(definitions.map((tool) => tool.name), [...TOOL_NAMES]);
-  assert.equal(new Set(definitions.map((tool) => tool.name)).size, 12);
+  assert.equal(new Set(definitions.map((tool) => tool.name)).size, TOOL_NAMES.length);
 
   for (const tool of definitions) {
     assert.equal(tool.description, TOOL_DESCRIPTIONS[tool.name as keyof typeof TOOL_DESCRIPTIONS]);
@@ -59,6 +59,7 @@ test("every tool publishes the result envelope its description promises", () => 
     run_check: "check",
     propose_hypothesis: "hypothesis",
     counter_hypothesis: "counter",
+    revise_hypothesis: "revision",
     propose_mitigation: "mitigation",
     vote: "vote",
     explain_vote: "rationale",

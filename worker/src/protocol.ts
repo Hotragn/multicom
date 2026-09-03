@@ -126,6 +126,15 @@ export function parseClientMessage(raw: string): ClientMessage {
         hypothesisId: entityId(input, "hypothesisId", id),
         evidence: string(input, "evidence", 400, id),
       };
+    case "revise": {
+      const confidence = input.confidence;
+      if (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+        throw new ProtocolError("invalid_request", "confidence must be a number from 0 to 1.", id);
+      }
+      const hypothesisId = entityId(input, "hypothesisId", id);
+      if (input.because === undefined) return { type, requestId: id, hypothesisId, confidence };
+      return { type, requestId: id, hypothesisId, confidence, because: string(input, "because", 240, id) };
+    }
     case "propose_mitigation":
       return {
         type,

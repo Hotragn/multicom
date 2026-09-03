@@ -95,7 +95,7 @@ flowchart LR
   B -->|human clicks Approve| R
 ```
 
-The browser registers twelve tools once, after load; every request travels the
+The browser registers thirteen tools once, after load; every request travels the
 same room WebSocket with a request ID. The room owns membership, voting,
 approval, idempotency and persistence. The target owns only the scripted fault,
 three fixed actions, and one scenario object per room.

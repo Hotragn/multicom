@@ -145,6 +145,9 @@ function isRoomState(value: unknown): value is RoomState {
     isRecord(hypothesis) && isId(hypothesis.id) && isId(hypothesis.by) &&
     isBoundedString(hypothesis.title, 120) && isBoundedString(hypothesis.evidence, 400) &&
     isFiniteNumber(hypothesis.confidence) && hypothesis.confidence >= 0 && hypothesis.confidence <= 1 &&
+    (hypothesis.openedAt === undefined ||
+      (isFiniteNumber(hypothesis.openedAt) && hypothesis.openedAt >= 0 && hypothesis.openedAt <= 1)) &&
+    (hypothesis.revisedBecause === undefined || isBoundedString(hypothesis.revisedBecause, 240)) &&
     Array.isArray(hypothesis.rebuttals) && hypothesis.rebuttals.length <= 10 && hypothesis.rebuttals.every((rebuttal) =>
       isRecord(rebuttal) && isId(rebuttal.by) && isBoundedString(rebuttal.evidence, 400)
     ) && isVoteRecord(hypothesis.votes) && isRationaleRecord(hypothesis.rationales)
@@ -191,6 +194,10 @@ function isToolResultData(value: unknown): value is ToolResultData {
     case "check": return isCheckResult(value.result);
     case "hypothesis": return isId(value.hypothesisId);
     case "counter": return isId(value.hypothesisId);
+    case "revision":
+      return isId(value.hypothesisId) &&
+        isFiniteNumber(value.confidence) &&
+        isFiniteNumber(value.openedAt);
     case "mitigation": return isId(value.mitigationId);
     case "vote": return isFiniteNumber(value.yes) && isFiniteNumber(value.no) && typeof value.passed === "boolean";
     case "rationale": return isId(value.targetId) && isFiniteNumber(value.count);
@@ -441,6 +448,25 @@ export class RoomClient {
     return this.request(
       (requestId) => ({ type: "counter", requestId, hypothesisId, evidence }),
       "counter",
+      signal,
+    );
+  }
+
+  async reviseHypothesis(
+    hypothesisId: string,
+    confidence: number,
+    because: string | undefined,
+    signal?: AbortSignal,
+  ): Promise<ToolResultData> {
+    return this.request(
+      (requestId) => ({
+        type: "revise",
+        requestId,
+        hypothesisId,
+        confidence,
+        ...(because === undefined ? {} : { because }),
+      }),
+      "revision",
       signal,
     );
   }

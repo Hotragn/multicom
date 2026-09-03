@@ -170,7 +170,11 @@ if (roomId === null) {
     // Connection state is reported through the UI subscription.
   });
 
-  if (TOOL_NAMES.length !== 12) {
-    console.error("The room tool surface changed size unexpectedly.");
-  }
+  void registration.then((summary) => {
+    if (summary.status === "registered" && summary.count !== TOOL_NAMES.length) {
+      console.error(
+        `Registered ${summary.count} tools but the contract declares ${TOOL_NAMES.length}.`,
+      );
+    }
+  });
 }

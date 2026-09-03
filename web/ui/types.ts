@@ -56,6 +56,12 @@ export interface RoomUiClient {
     confidence: number,
     signal?: AbortSignal,
   ) => Promise<ToolResultData>;
+  reviseHypothesis?: (
+    hypothesisId: string,
+    confidence: number,
+    because: string | undefined,
+    signal?: AbortSignal,
+  ) => Promise<ToolResultData>;
   counterHypothesis?: (
     hypothesisId: string,
     evidence: string,

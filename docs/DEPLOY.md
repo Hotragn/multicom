@@ -110,7 +110,7 @@ budget and can be run as often as you like:
 npm run smoke:prod
 ```
 
-Nine checks: twelve tools registered, a live `wss` connection, real fault
+Nine checks: thirteen tools registered, a live `wss` connection, real fault
 metrics, the visualization mounted, the onboarding tiers, the lobby at the bare
 URL, and no console errors.
 

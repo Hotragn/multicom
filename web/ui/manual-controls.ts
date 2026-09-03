@@ -24,7 +24,13 @@ import type { RoomUiClient } from "./types";
 
 export interface ManualControls {
   root: HTMLElement;
-  render(input: { room: RoomState | null; joined: boolean; open: boolean }): void;
+  render(input: {
+    room: RoomState | null;
+    joined: boolean;
+    open: boolean;
+    /** This operator's member id, so revise can offer only their own theories. */
+    memberId: string | null;
+  }): void;
   focusJoin(): void;
 }
 
@@ -152,6 +158,10 @@ export function createManualControls(
         return [`hypothesis ${data.hypothesisId} is on the board`];
       case "counter":
         return [`rebuttal recorded against ${data.hypothesisId}`];
+      case "revision":
+        return [
+          `${data.hypothesisId} moved from ${Math.round(data.openedAt * 100)}% to ${Math.round(data.confidence * 100)}%`,
+        ];
       case "mitigation":
         return [`mitigation ${data.mitigationId} is open for votes`];
       case "vote":
@@ -325,6 +335,35 @@ export function createManualControls(
   });
   counterButton.dataset.testid = "manual-counter";
 
+  // Revising is author-only, so this select is filtered to the operator's own
+  // theories rather than showing everything and failing with not_author.
+  const reviseSelect = select([]);
+  reviseSelect.dataset.testid = "manual-revise-target";
+  const reviseConfidence = element("input", "mc-input mc-input--range");
+  reviseConfidence.type = "range";
+  reviseConfidence.min = "0";
+  reviseConfidence.max = "100";
+  reviseConfidence.step = "5";
+  reviseConfidence.value = "20";
+  reviseConfidence.dataset.testid = "manual-revise-confidence";
+  const reviseValue = textElement("output", "mc-field__output", "20%");
+  reviseConfidence.addEventListener("input", () => {
+    setText(reviseValue, `${reviseConfidence.value}%`);
+  });
+  const reviseBecause = textInput("What moved you (optional)", 240);
+  reviseBecause.dataset.testid = "manual-revise-because";
+  const reviseButton = button("mc-button mc-button--secondary", "Revise my confidence", () => {
+    void run("Revision", () =>
+      client.reviseHypothesis?.(
+        reviseSelect.value,
+        Number(reviseConfidence.value) / 100,
+        reviseBecause.value.trim() || undefined,
+        signal,
+      ),
+    );
+  });
+  reviseButton.dataset.testid = "manual-revise";
+
   argueGroup.body.append(
     labelledField("Title", titleInput),
     labelledField("Evidence", evidenceInput),
@@ -334,6 +373,11 @@ export function createManualControls(
     labelledField("Challenge", counterSelect),
     labelledField("Because", counterEvidence),
     counterButton,
+    labelledField("Revise my own theory", reviseSelect, "Only your own theories appear here."),
+    labelledField("New confidence", reviseConfidence),
+    reviseValue,
+    labelledField("What moved you", reviseBecause),
+    reviseButton,
   );
 
   // --- Fix ------------------------------------------------------------------
@@ -449,7 +493,7 @@ export function createManualControls(
 
   return {
     root,
-    render({ room, joined, open }) {
+    render({ room, joined, open, memberId }) {
       setHidden(root, !open);
       root.dataset.joined = String(joined);
       joinButton.disabled = joined;
@@ -464,6 +508,7 @@ export function createManualControls(
       for (const control of [
         proposeButton,
         counterButton,
+        reviseButton,
         mitigationButton,
         voteYes,
         voteNo,
@@ -479,6 +524,13 @@ export function createManualControls(
         label: `${hypothesis.id}: ${hypothesis.title}`,
       }));
       syncSelect(counterSelect, hypotheses, "No hypotheses yet");
+      syncSelect(
+        reviseSelect,
+        (room?.hypotheses ?? [])
+          .filter((hypothesis) => memberId !== null && hypothesis.by === memberId)
+          .map((hypothesis) => ({ value: hypothesis.id, label: `${hypothesis.id}: ${hypothesis.title}` })),
+        "You have not posted a theory yet",
+      );
       syncSelect(fixHypothesis, hypotheses, "No hypotheses yet");
 
       const voteTargets = [
