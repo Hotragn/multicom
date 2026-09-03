@@ -12,7 +12,7 @@ It runs in this order and stops on the first failure:
 2. UI formatting tests.
 3. WebMCP definition, validation, output-budget, registration, correlation, and malformed-message tests.
 4. Room voting/protocol and target scenario tests.
-5. Eight Chromium acceptance journeys.
+5. Nine Chromium acceptance journeys.
 
 ## Browser coverage
 
@@ -26,6 +26,7 @@ It runs in this order and stops on the first failure:
 | Recovery | `scale_pool:default` reaches <2% errors and resolved state in both tabs within 10 seconds |
 | Demo mode | House responder joins within 3 seconds, proposes by 10 seconds, then counters weak evidence |
 | Spectating | A page that never joins still gets live metrics, the house hypothesis, a watching notice, and no write access |
+| Self-reset | A resolved demo room restarts for the next visitor, and the target re-arms a completed run on its own |
 | Limits | Commander capability, six-person capacity, five hypotheses, malformed/oversized messages |
 | Idempotency | Replaying one mutation request ID creates one hypothesis |
 
@@ -54,6 +55,7 @@ the actual deployed Workers:
 - [ ] Commander approval names the server-derived action.
 - [ ] `scale_pool:default` resolves every connected tab within 10 seconds.
 - [ ] Reusing the consumed approval fails.
+- [ ] Reopening the demo link after a completed run shows a live incident again.
 - [ ] The room remains usable after one browser reconnects.
 
 ## Verified live deployment

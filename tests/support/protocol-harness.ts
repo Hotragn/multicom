@@ -103,6 +103,10 @@ class HarnessRoom {
     });
     socket.on("close", () => this.disconnect(peer));
     if (demo) {
+      // Mirror the room Worker: a resolved demo room restarts for the next
+      // visitor, unless somebody else is still watching it.
+      const watchers = [...this.peers].filter((item) => !item.isBot).length;
+      if (this.state.phase === "resolved" && watchers <= 1) this.restartIncident();
       this.ensureStatusTimer();
       this.armBot();
     }
@@ -394,6 +398,34 @@ class HarnessRoom {
         this.statusTimer = undefined;
       }
     }, 2_000);
+  }
+
+  private restartIncident(): void {
+    this.scenario = { armed: true, armedAt: Date.now(), actionId: null, appliedAt: null };
+    if (this.bot.joinTimer) clearTimeout(this.bot.joinTimer);
+    if (this.bot.hypothesisTimer) clearTimeout(this.bot.hypothesisTimer);
+    this.bot.peer = undefined;
+    this.bot.hypothesisId = undefined;
+    this.bot.evidenceSeen = false;
+    this.bot.countered = false;
+    this.bot.joinTimer = undefined;
+    this.bot.hypothesisTimer = undefined;
+    for (const item of this.pending.values()) clearTimeout(item.timer);
+    this.pending.clear();
+    this.approvals.clear();
+    this.state.phase = "triage";
+    this.state.incidentStartedAt = nowSeconds();
+    this.state.resolvedAt = null;
+    this.state.members = [];
+    this.state.hypotheses = [];
+    this.state.mitigations = [];
+    this.state.appliedActions = [];
+    this.state.log = [];
+    for (const item of [...this.peers]) {
+      if (item.isBot) this.peers.delete(item);
+      else delete item.memberId;
+    }
+    this.broadcastState();
   }
 
   private armBot(): void {

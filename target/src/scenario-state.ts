@@ -22,6 +22,20 @@ export const INITIAL_SCENARIO: PersistedScenario = {
   appliedAt: null,
 };
 
+// A completed run must not leave the public demo healthy for good, so the
+// scripted fault comes back once the recovery has been on screen long enough
+// to read. Derived from persisted time, like the recovery curve below, so no
+// background timer is needed.
+export const DEMO_RESET_MS = 5 * 60 * 1_000;
+
+export function hasExpired(state: PersistedScenario, nowMs: number): boolean {
+  return state.armed && state.appliedAt !== null && nowMs - state.appliedAt >= DEMO_RESET_MS;
+}
+
+export function rearmed(nowMs: number): PersistedScenario {
+  return { armed: true, armedAt: nowMs, actionId: null, appliedAt: null };
+}
+
 const cloneStatus = (status: ServiceStatus): ServiceStatus => ({
   ...status,
   flagStates: { ...status.flagStates },
@@ -33,6 +47,7 @@ const interpolate = (from: number, to: number, progress: number): number =>
 
 export function snapshotAt(state: PersistedScenario, nowMs: number): ServiceStatus {
   if (!state.armed) return cloneStatus(HEALTHY_STATUS);
+  if (hasExpired(state, nowMs)) return cloneStatus(FAULTY_STATUS);
 
   if (state.actionId === "rollback:deploy-1f3a") {
     return cloneStatus(PARTIAL_ROLLBACK_STATUS);

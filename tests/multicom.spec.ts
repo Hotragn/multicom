@@ -324,6 +324,58 @@ test("shows a live room to a judge who opens the demo link with no agent", async
   }
 });
 
+test("restarts a spent demo room so the next visitor gets a live incident", async ({ browser }) => {
+  test.setTimeout(40_000);
+  const room = "demo-restart";
+
+  // First visitor runs the incident all the way to resolved.
+  const first = await browser.newContext();
+  try {
+    const page = await newRoomPage(first, room, true, true);
+    await join(page, "Priya", "commander");
+    const hypothesisId = await hypothesis(page);
+    const mitigationId = await mitigation(page, hypothesisId, "scale_pool:default");
+    await callTool(page, "vote", { targetId: mitigationId, choice: "yes" });
+    await beginConfirmation(page, mitigationId);
+    await expect(page.getByTestId("confirm-dialog")).toBeVisible();
+    await page.getByTestId("approve-mitigation").click();
+    await finishPending(page);
+    await callTool(page, "apply_mitigation", { actionId: "scale_pool:default" });
+    await expect
+      .poll(async () => page.getByTestId("room-phase").textContent(), { timeout: 15_000 })
+      .toBe("Resolved");
+  } finally {
+    await first.close();
+  }
+
+  // The next visitor opens the same link and must not inherit a finished demo.
+  const second = await browser.newContext();
+  try {
+    const page = await newRoomPage(second, room, true, true);
+    await expect
+      .poll(async () => page.getByTestId("room-phase").textContent(), { timeout: 10_000 })
+      .not.toBe("Resolved");
+    await expect
+      .poll(async () => {
+        const text = await page.getByTestId("error-rate").textContent();
+        return Number.parseFloat(text ?? "NaN");
+      }, { timeout: 10_000 })
+      .toBeGreaterThan(5);
+
+    // The previous run left nothing behind, and the room accepts work again.
+    await expect(page.getByTestId("hypotheses-list")).not.toContainText("DB pool exhausted");
+    await join(page, "Arjun", "commander");
+    const reopened = await callTool<ToolData>(page, "propose_hypothesis", {
+      title: "Fresh incident is investigable",
+      evidence: "The room accepts new work after the previous run was cleared.",
+      confidence: 0.6,
+    });
+    expect(reopened.kind).toBe("hypothesis");
+  } finally {
+    await second.close();
+  }
+});
+
 test("rejects malformed input and enforces room and board limits", async () => {
   const url = `${harness.wsOrigin}/rooms/limits/ws?commander=test-commander-token`;
   const clients: RawClient[] = [];

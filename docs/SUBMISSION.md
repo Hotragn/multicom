@@ -53,6 +53,7 @@ WebMCP is not an add-on to the demo; it is the product boundary. The same page e
 - Mutation replay protection and bounded request correlation
 - Untrusted-output marking, 2 KB results, and text-only rendering
 - Solo house responder for judges opening `?demo=1`, with no agent required to watch
+- Self-resetting incident, so the public link is never spent by an earlier visitor
 - Visible service recovery shared across every connected browser
 
 ## Architecture
@@ -65,7 +66,7 @@ Codex helped turn the initial specification into frozen shared contracts, then b
 
 ## Testing
 
-Run `npm test`. The command checks TypeScript and 35 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, five target tests, and eight Chromium journeys. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
+Run `npm test`. The command checks TypeScript and 37 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, six target tests, and nine Chromium journeys. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
 
 ## Judging fit
 
@@ -107,7 +108,7 @@ tools in ChatGPT desktop.
 
 ## Known limitations
 
-This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is global, so the public demo needs re-arming after someone completes the incident.
+This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is one global state, so a resolved room restarts only when nobody else is watching it; two judges in the same room at once share one incident.
 
 ## Readiness
 

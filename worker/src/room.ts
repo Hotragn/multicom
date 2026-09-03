@@ -675,7 +675,12 @@ export class Room extends DurableObject<RoomEnv> {
   // house bot and the status feed for that connection so the room shows the live
   // incident instead of an empty board while it waits for someone to join.
   private async beginDemoSpectating(): Promise<void> {
-    if (this.room.state.phase === "resolved") return;
+    if (this.room.state.phase === "resolved") {
+      // A resolved demo room is useless to whoever opens the link next, but
+      // never pull the room out from under someone who is still in it.
+      if (this.ctx.getWebSockets().length > 1) return;
+      if (!(await this.restartIncident())) return;
+    }
     const alreadyArmed = this.room.bot.enabled && this.room.bot.humanJoinedAt !== null;
     this.room.bot.enabled = true;
     this.room.bot.humanJoinedAt ??= Date.now();
@@ -684,6 +689,25 @@ export class Room extends DurableObject<RoomEnv> {
     this.startStatusTimer();
     this.scheduleBot();
     await this.broadcastStatus();
+  }
+
+  // Re-arm the scripted fault and clear the board so the next visitor gets a
+  // live incident. Only ever called for a demo room with nobody else watching.
+  private async restartIncident(): Promise<boolean> {
+    try {
+      await this.targetPost<{ armed: boolean }>("/scenario/rearm");
+    } catch (error) {
+      // Leave the resolved room alone rather than show a fresh incident over a
+      // service that is still healthy.
+      console.error("Could not re-arm the scripted fault", error);
+      return false;
+    }
+    this.clearTimers();
+    await this.ctx.storage.deleteAll();
+    this.room = emptyRoom(this.room.state.id);
+    await this.persist();
+    this.broadcast({ type: "state", state: cloneState(this.room.state) });
+    return true;
   }
 
   private scheduleBot(): void {

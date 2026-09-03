@@ -17,8 +17,9 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Scripted target service with visible recovery in every connected tab
 - Solo `?demo=1` mode with a house responder that argues, then concedes
 - Read-only spectating, so opening the link with no agent still shows the live incident
+- A self-resetting incident, so a completed run never leaves the demo spent
 - Literal rendering of all untrusted text; no HTML injection sinks
-- 35 automated checks, including eight two-context Chromium journeys
+- 37 automated checks, including nine two-context Chromium journeys
 
 ## What it looks like
 
@@ -121,6 +122,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the coverage map and the local Cloudf
 - The server derives approval text from the selected mitigation; agents cannot rewrite it.
 - Approval expires after 60 seconds and is consumed before the target call.
 - Reused mutation request IDs replay the prior result or fail if their input changed.
+- Re-arming the scripted fault needs the room's target token; the operator admin key stays separate.
 - Production rejects WebSockets unless `ALLOWED_ORIGINS` and `COMMANDER_TOKEN` are configured.
 - Target mutations require a separate bearer token.
 - Tool output is capped below 2 KB; nested server data is structurally validated in the browser.

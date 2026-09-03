@@ -4,6 +4,8 @@ import { SERVICE_NAME } from "../../shared/scenario";
 import {
   INITIAL_SCENARIO,
   checkAt,
+  hasExpired,
+  rearmed,
   selectLogs,
   snapshotAt,
   type PersistedScenario,
@@ -60,6 +62,13 @@ export class ScenarioState extends DurableObject<Env> {
     const url = new URL(request.url);
     const now = Date.now();
 
+    // Expire a finished run before answering, so every endpoint agrees about
+    // whether the incident is live.
+    if (hasExpired(this.data, now)) {
+      this.data = rearmed(now);
+      await this.ctx.storage.put("scenario", this.data);
+    }
+
     if (request.method === "GET" && url.pathname === "/status") {
       return json(snapshotAt(this.data, now));
     }
@@ -91,6 +100,18 @@ export class ScenarioState extends DurableObject<Env> {
       this.data = { ...this.data, actionId, appliedAt: now };
       await this.ctx.storage.put("scenario", this.data);
       return json({ applied: true, status: snapshotAt(this.data, now) });
+    }
+
+    // The room asks for this when someone opens a demo room that a previous
+    // visitor already resolved. Authorized by the room's target token, not the
+    // operator admin key.
+    if (request.method === "POST" && url.pathname === "/scenario/rearm") {
+      if (!safeEqual(request.headers.get("authorization"), this.env.TARGET_TOKEN ? `Bearer ${this.env.TARGET_TOKEN}` : undefined)) {
+        return json({ error: "forbidden" }, 403);
+      }
+      this.data = rearmed(now);
+      await this.ctx.storage.put("scenario", this.data);
+      return json({ armed: true, status: snapshotAt(this.data, now) });
     }
 
     if ((request.method === "GET" || request.method === "POST") && url.pathname === "/admin/fault") {
