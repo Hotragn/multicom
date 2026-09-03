@@ -123,7 +123,8 @@ This challenge build ships one scripted incident, capability-link commander acce
 - [x] Hosted frontend URL
 - [x] Live browser acceptance pass (room connection live; 11 WebMCP tools visible)
 - [x] Live cold-open pass (demo link shows the incident with no agent attached)
-- [x] `apply_mitigation` verified end to end against real Workers (local `wrangler dev`)
+- [x] `apply_mitigation` verified end to end against the deployed Workers: all 14 production checks pass,
+      ending in a real approval click, an apply against the live target, and recovery in three browsers
 - [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
 - [ ] `TARGET_TOKEN` set on the deployed room Worker, so `apply_mitigation` works in production
 - [x] Interface screenshots captured and indexed

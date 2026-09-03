@@ -45,21 +45,26 @@ The automated suite still drives the deterministic in-process harness rather tha
 `wrangler dev`, so a release is ready only after these live checks pass against
 the actual deployed Workers:
 
-- [ ] Target `/health` and room `/health` return 200.
-- [ ] Opening the demo link with no agent shows live metrics and the house responder.
-- [ ] A responder cannot claim commander without the capability.
-- [ ] Two separate browser sessions join the same room.
+- [x] Target `/health` and room `/health` return 200.
+- [x] Opening the demo link with no agent shows live metrics and the house responder.
+- [x] A responder cannot claim commander without the capability.
+- [x] Two separate browser sessions join the same room.
 - [x] All 12 tools register into Chrome's native WebMCP surface (see `docs/webmcp-chrome-report.json`).
-- [ ] An agent drives join, query, propose, vote and confirm through that surface with one instruction.
-- [ ] A hypothesis appears in both sessions promptly.
-- [ ] The injection-trap log stays literal.
-- [ ] Apply fails before vote and approval.
-- [ ] Commander approval names the server-derived action.
-- [ ] `scale_pool:default` resolves every connected tab within 10 seconds.
-- [ ] Reusing the consumed approval fails.
-- [ ] Reopening the demo link after a completed run shows a live incident again.
-- [ ] A rejected approval reports `reason: "rejected"`, a lapsed one `reason: "expired"`.
-- [ ] The room remains usable after one browser reconnects.
+- [~] An agent drives join, query, propose, vote and confirm with one instruction.
+      Done in substance by the drill in [AGENT-DRILL.md](AGENT-DRILL.md): two
+      language-model agents worked the incident from the tool surface alone,
+      through the real registered tools. Not reproducible through a native
+      agent client, because the one that ships WebMCP today is ChatGPT desktop
+      and this project deliberately does not depend on it.
+- [x] A hypothesis appears in both sessions promptly.
+- [x] The injection-trap log stays literal.
+- [x] Apply fails before vote and approval.
+- [x] Commander approval names the server-derived action.
+- [x] `scale_pool:default` resolves every connected tab within 10 seconds.
+- [x] Reusing the consumed approval fails.
+- [x] Reopening the demo link after a completed run shows a live incident again.
+- [x] A rejected approval reports `reason: "rejected"`, a lapsed one `reason: "expired"`.
+- [x] The room remains usable after one browser reconnects.
 
 ## Verified live deployment
 
