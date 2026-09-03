@@ -33,9 +33,15 @@ The Playwright harness imports the production protocol parser, vote rules, and t
 
 ## Cloudflare runtime note
 
-Cloudflare does not currently ship the `workerd` binary used by Wrangler local development for Windows on ARM64. On that host, unit and Chromium acceptance checks run, but `wrangler dev` and `wrangler deploy --dry-run` cannot start. Run the final Worker integration and live acceptance pass on a supported Linux, macOS, Windows x64, or CI host.
+Earlier builds of this project could not run Wrangler's local Worker runtime on
+Windows ARM64. That is no longer true: with wrangler 4.128 and workerd
+2026-08-31, `wrangler dev` serves the target Worker and `wrangler deploy
+--dry-run` bundles both Workers on that host. Local Worker integration no longer
+has to move to another machine.
 
-This is a host-tooling limitation, not an ignored product test. A release is ready only after these live checks pass against the actual Workers:
+The automated suite still drives the deterministic in-process harness rather than
+`wrangler dev`, so a release is ready only after these live checks pass against
+the actual deployed Workers:
 
 - [ ] Target `/health` and room `/health` return 200.
 - [ ] Opening the demo link with no agent shows live metrics and the house responder.

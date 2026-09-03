@@ -107,7 +107,7 @@ tools in ChatGPT desktop.
 
 ## Known limitations
 
-This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. Windows ARM64 cannot run Wrangler's local Worker runtime; the deterministic Chromium harness remains available there, and the final live Worker pass must run on a supported host.
+This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is global, so the public demo needs re-arming after someone completes the incident.
 
 ## Readiness
 
