@@ -35,6 +35,7 @@ export function clear(node: ParentNode): void {
 
 export function setHidden(node: HTMLElement, hidden: boolean): void {
   node.hidden = hidden;
+  node.inert = hidden;
   node.setAttribute("aria-hidden", hidden ? "true" : "false");
 }
 

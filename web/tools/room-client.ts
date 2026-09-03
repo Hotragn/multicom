@@ -323,8 +323,9 @@ export class RoomClient {
     await this.ensureOpen(false);
   }
 
-  // Open the room and read the board without joining, so the page shows the live
-  // incident to someone who opened the link before any agent attached.
+  // Open the room and read the board and live health without joining, so the
+  // page shows the incident to someone who opened the link before any agent
+  // attached. Writes still require join_room.
   async watch(): Promise<void> {
     this.watching = true;
     await this.ensureOpen(false);
@@ -337,6 +338,11 @@ export class RoomClient {
       await this.dispatchRequest((requestId) => ({ type: "get_room_state", requestId }), "room_state");
     } catch {
       // Not fatal: the room pushes state on its next broadcast anyway.
+    }
+    try {
+      await this.dispatchRequest((requestId) => ({ type: "get_service_status", requestId }), "service_status");
+    } catch {
+      // Status also arrives on the push channel once a viewer is connected.
     }
   }
 
@@ -364,7 +370,8 @@ export class RoomClient {
   }
 
   async getRoomState(signal?: AbortSignal): Promise<ToolResultData> {
-    return this.request(
+    await raceWithSignal(this.ensureOpen(this.reconnectAttempts > 0), signal);
+    return this.dispatchRequest(
       (requestId) => ({ type: "get_room_state", requestId }),
       "room_state",
       signal,
@@ -372,7 +379,8 @@ export class RoomClient {
   }
 
   async getServiceStatus(signal?: AbortSignal): Promise<ToolResultData> {
-    return this.request(
+    await raceWithSignal(this.ensureOpen(this.reconnectAttempts > 0), signal);
+    return this.dispatchRequest(
       (requestId) => ({ type: "get_service_status", requestId }),
       "service_status",
       signal,
@@ -696,6 +704,7 @@ export class RoomClient {
       this.latestConfirmation = message;
     } else if (message.type === "tool_result") {
       if (message.data.kind === "room_state") this.latestState = message.data.state;
+      if (message.data.kind === "service_status") this.latestStatus = message.data.status;
       const pending = this.pending.get(message.requestId);
       if (pending) {
         if (message.data.kind !== pending.expectedKind) {

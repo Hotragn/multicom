@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentInstruction,
   clamp,
+  commanderSeatTaken,
+  FIRST_AGENT_INSTRUCTION,
   formatConfidence,
   formatElapsed,
   formatErrorRate,
   formatLatency,
+  heroHeadline,
   phaseLabel,
 } from "./format";
 
@@ -22,5 +26,16 @@ describe("room display formatting", () => {
     expect(formatElapsed(-1)).toBe("0:00");
     expect(phaseLabel("mitigating")).toBe("Mitigating");
     expect(phaseLabel("unexpected")).toBe("Waiting");
+  });
+
+  it("derives agent instruction and hero copy from room state", () => {
+    expect(FIRST_AGENT_INSTRUCTION).toContain("under the name Judge");
+    expect(agentInstruction(true)).toContain("as a responder");
+    expect(agentInstruction(true)).not.toContain("under the name Judge");
+    expect(commanderSeatTaken([{ role: "commander", agentActive: true }])).toBe(true);
+    expect(commanderSeatTaken([{ role: "commander", agentActive: false }])).toBe(false);
+    expect(heroHeadline("diagnosing", 1)).toBe("One theory on the board");
+    expect(heroHeadline("diagnosing", 3)).toBe("Three theories, one cause");
+    expect(heroHeadline("triage", 0)).toBe("Production is down");
   });
 });

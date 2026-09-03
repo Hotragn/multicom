@@ -1,23 +1,16 @@
 import { TOOL_NAMES } from "../../shared/tools";
+import type { RoomState } from "../../shared/ws-messages";
 import { button, element, setHidden, setText, textElement } from "./dom";
+import {
+  agentInstruction,
+  agentSeatNote,
+  commanderSeatTaken,
+  FIRST_AGENT_INSTRUCTION,
+} from "./format";
 import { icon } from "./icons";
 import type { ParticipationTier, ToolRegistrationSummary, WarRoomEnvironment } from "./types";
 
-/**
- * The instruction a judge copies and sends to their own agent.
- *
- * It says *why* the commander seat is the right one to take, because two real
- * agents read the old wording, joined as responders instead, and deadlocked the
- * room: with nobody in the seat, nothing can be approved. One of them avoided
- * the seat because it thought holding it would let it approve its own fix.
- *
- * Note this text reaches the agent as a message from its human, not as page
- * content — which is the only reason it is legitimate for the agent to act on
- * it. The durable fix is in `join_room`'s `role` schema, which an agent reads
- * from the tool surface itself.
- */
-export const FIRST_AGENT_INSTRUCTION =
-  "Join this incident room as commander, under the name Judge unless I give you another. That seat is what puts the approval dialog in front of me — you cannot approve anything yourself, and I will be the one clicking. Inspect the service, gather evidence, challenge weak theories, and coordinate a safe fix. Ask me before anything is applied.";
+export { FIRST_AGENT_INSTRUCTION };
 
 export interface OnboardingCallbacks {
   onDriveManually(): void;
@@ -30,6 +23,7 @@ export interface OnboardingPanel {
   root: HTMLElement;
   render(input: {
     joined: boolean;
+    room: RoomState | null;
     tier: ParticipationTier;
     registration: ToolRegistrationSummary;
     environment: WarRoomEnvironment;
@@ -100,8 +94,12 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
   const instruction = element("div", "mc-instruction");
   const instructionText = textElement("p", "mc-instruction__text", FIRST_AGENT_INSTRUCTION);
   instructionText.dataset.testid = "agent-instruction";
+  let commanderTaken = false;
   const copyInstruction = button("mc-button mc-button--ghost", "Copy first instruction", () =>
-    callbacks.onCopy(FIRST_AGENT_INSTRUCTION, "First instruction"),
+    callbacks.onCopy(
+      instructionText.textContent ?? agentInstruction(commanderTaken),
+      commanderTaken ? "Responder instruction" : "First instruction",
+    ),
   );
   copyInstruction.prepend(icon("copy"));
   instruction.append(instructionText, copyInstruction);
@@ -169,15 +167,14 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
 
   return {
     root,
-    render({ joined, tier, registration, environment, manualOpen }) {
+    render({ joined, room, tier, registration, environment, manualOpen }) {
       // A visitor with a seat does not need the way in any more.
       setHidden(root, joined);
       root.dataset.tier = tier;
-
-      setText(
-        heading,
-        joined ? "You are in the room" : "You are watching this incident",
-      );
+      commanderTaken = commanderSeatTaken(room?.members);
+      setText(instructionText, agentInstruction(commanderTaken));
+      setText(seatNote, agentSeatNote(commanderTaken));
+      setText(heading, "You are watching this incident");
 
       const registered = registration.status === "registered";
       agentTier.root.dataset.available = String(registered);

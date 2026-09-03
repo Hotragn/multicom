@@ -18,6 +18,7 @@ import {
   setText,
   textElement,
 } from "./dom";
+import { commanderSeatTaken } from "./format";
 import { icon } from "./icons";
 import type { RoomUiClient } from "./types";
 
@@ -35,6 +36,7 @@ export interface ManualCallbacks {
 }
 
 const LOG_WINDOWS: LogWindow[] = ["5m", "15m", "1h"];
+const FALLBACK_OPERATOR_NAME = "Operator";
 
 function select(options: Array<{ value: string; label: string }>): HTMLSelectElement {
   const node = element("select", "mc-input");
@@ -202,20 +204,23 @@ export function createManualControls(
   // --- Join -----------------------------------------------------------------
   const joinGroup = group("Take a seat", "Nothing can be written to the board until you join.");
   const nameInput = textInput("Your name", 40);
-  nameInput.value = "Judge";
   nameInput.dataset.testid = "manual-name";
+  let roleTouched = false;
   const roleSelect = select([
     { value: "commander", label: "Commander (can approve the fix)" },
     { value: "responder", label: "Responder" },
   ]);
   roleSelect.dataset.testid = "manual-role";
+  roleSelect.addEventListener("change", () => {
+    roleTouched = true;
+  });
   const joinButton = button("mc-button mc-button--primary", "Join the room", () => {
     void (async () => {
       if (!client.join) {
         callbacks.onNotice("This page cannot join the room.");
         return;
       }
-      const name = nameInput.value.trim() || "Judge";
+      const name = nameInput.value.trim() || FALLBACK_OPERATOR_NAME;
       const role = roleSelect.value === "commander" ? "commander" : "responder";
       try {
         const outcome = await client.join(name, role as RoomRole, signal);
@@ -286,10 +291,17 @@ export function createManualControls(
   confidenceInput.step = "5";
   confidenceInput.value = "80";
   confidenceInput.dataset.testid = "manual-confidence";
-  const confidenceValue = textElement("output", "mc-field__output", "80%");
-  confidenceInput.addEventListener("input", () => {
+  confidenceInput.name = "confidence";
+  confidenceInput.setAttribute("aria-valuemin", "0");
+  confidenceInput.setAttribute("aria-valuemax", "100");
+  const syncConfidence = (): void => {
     setText(confidenceValue, `${confidenceInput.value}%`);
-  });
+    confidenceInput.setAttribute("aria-valuenow", confidenceInput.value);
+    confidenceInput.setAttribute("aria-valuetext", `${confidenceInput.value} percent`);
+  };
+  const confidenceValue = textElement("output", "mc-field__output", "80%");
+  confidenceInput.addEventListener("input", syncConfidence);
+  syncConfidence();
   const proposeButton = button("mc-button mc-button--primary", "Propose hypothesis", () => {
     void run("Hypothesis", () =>
       client.proposeHypothesis?.(
@@ -443,6 +455,9 @@ export function createManualControls(
       joinButton.disabled = joined;
       nameInput.disabled = joined;
       roleSelect.disabled = joined;
+      if (!joined && !roleTouched) {
+        roleSelect.value = commanderSeatTaken(room?.members) ? "responder" : "commander";
+      }
       setText(joinButton, joined ? "You are in the room" : "Join the room");
 
       const writeDisabled = !joined || room?.phase === "resolved";

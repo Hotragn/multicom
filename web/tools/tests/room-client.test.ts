@@ -50,9 +50,9 @@ async function join(client: RoomClient, socket: FakeSocket): Promise<void> {
   await promise;
 }
 
-test("requires join_room before post-join tool requests", async () => {
+test("requires join_room before write and diagnostic tools", async () => {
   const { client, socket } = setupClient();
-  const request = client.getRoomState();
+  const request = client.queryLogs("storefront-api", "15m", undefined);
   socket.open();
   await assert.rejects(request, (error: unknown) => {
     return (
@@ -61,6 +61,31 @@ test("requires join_room before post-join tool requests", async () => {
       (error as { code: string }).code === "not_joined"
     );
   });
+});
+
+test("lets a spectator read the board and health without joining", async () => {
+  const { client, socket } = setupClient();
+  const statePromise = client.getRoomState();
+  const statusPromise = client.getServiceStatus();
+  socket.open();
+  await waitForSent(socket, 2);
+  const outbound = socket.sent.map((raw) => JSON.parse(raw) as { requestId: string; type: string });
+  const stateRequest = outbound.find((message) => message.type === "get_room_state");
+  const statusRequest = outbound.find((message) => message.type === "get_service_status");
+  assert.ok(stateRequest);
+  assert.ok(statusRequest);
+  socket.receive({
+    type: "tool_result",
+    requestId: stateRequest.requestId,
+    data: { kind: "room_state", state: EMPTY_STATE },
+  });
+  socket.receive({
+    type: "tool_result",
+    requestId: statusRequest.requestId,
+    data: { kind: "service_status", status: FAULTY_STATUS },
+  });
+  assert.equal((await statePromise).kind, "room_state");
+  assert.equal((await statusPromise).kind, "service_status");
 });
 
 test("correlates concurrent responses by requestId even when reversed", async () => {

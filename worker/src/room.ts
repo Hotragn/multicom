@@ -265,6 +265,7 @@ export class Room extends DurableObject<RoomEnv> {
     } satisfies ConnectionAttachment);
     this.ctx.acceptWebSocket(server);
     if (url.searchParams.get("demo") === "1") this.ctx.waitUntil(this.beginDemoSpectating());
+    else this.ctx.waitUntil(this.beginLiveViewing());
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -347,11 +348,18 @@ export class Room extends DurableObject<RoomEnv> {
       return;
     }
     if (!session.memberId || !this.member(session.memberId)?.agentActive) {
-      // Reading the board is the only thing a spectator may do before joining.
-      // Joining is unauthenticated anyway, so this grants no new visibility.
-      if (message.type === "get_room_state" && !session.isBot) {
+      // The board and live health are readable before a seat is taken. Writes
+      // still require join; joining itself is unauthenticated, so this adds no
+      // new visibility beyond what the page already shows a human visitor.
+      if (!session.isBot && (message.type === "get_room_state" || message.type === "get_service_status")) {
         if (session.demo) await this.beginDemoSpectating();
-        this.sendToolResult(session, message.requestId, { kind: "room_state", state: cloneState(this.room.state) });
+        else await this.beginLiveViewing();
+        if (message.type === "get_room_state") {
+          this.sendToolResult(session, message.requestId, { kind: "room_state", state: cloneState(this.room.state) });
+          return;
+        }
+        const status = await this.targetGet<ServiceStatus>("/status");
+        this.sendToolResult(session, message.requestId, { kind: "service_status", status });
         return;
       }
       this.fail(session, "join_required", "Join the room before using this operation.", "requestId" in message ? message.requestId : undefined);
@@ -840,6 +848,16 @@ export class Room extends DurableObject<RoomEnv> {
     if (!this.statusTimer) return;
     clearInterval(this.statusTimer);
     this.statusTimer = undefined;
+  }
+
+  // A judge can open any room link with no agent attached. Start the status
+  // feed for that socket so the page shows live health instead of placeholder
+  // dashes. Unlike demo spectating, this does not arm the house bot.
+  private async beginLiveViewing(): Promise<void> {
+    if (this.room.state.phase === "resolved") return;
+    await this.ctx.storage.deleteAlarm();
+    this.startStatusTimer();
+    await this.broadcastStatus();
   }
 
   // A judge can open the demo link in a browser with no agent attached. Arm the

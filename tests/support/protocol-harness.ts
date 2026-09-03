@@ -175,6 +175,8 @@ class HarnessRoom {
       if (spent && !joinedHuman) this.restartIncident();
       this.ensureStatusTimer();
       this.armBot();
+    } else {
+      this.ensureStatusTimer();
     }
     return peer;
   }
@@ -229,12 +231,18 @@ class HarnessRoom {
       return;
     }
     if (!peer.memberId || !this.member(peer.memberId)?.agentActive) {
-      if (message.type === "get_room_state" && !peer.isBot) {
+      if (!peer.isBot && (message.type === "get_room_state" || message.type === "get_service_status")) {
         if (peer.demo) {
           this.ensureStatusTimer();
           this.armBot();
+        } else {
+          this.ensureStatusTimer();
         }
-        this.result(peer, message.requestId, { kind: "room_state", state: clone(this.state) });
+        if (message.type === "get_room_state") {
+          this.result(peer, message.requestId, { kind: "room_state", state: clone(this.state) });
+          return;
+        }
+        this.result(peer, message.requestId, { kind: "service_status", status: this.targetStatus() });
         return;
       }
       this.error(peer, "requestId" in message ? message.requestId : undefined, "join_required", "Join the room first.");

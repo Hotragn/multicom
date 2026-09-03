@@ -1,5 +1,5 @@
 import type { RoomState } from "../../shared/ws-messages";
-import { clear, element, setText, textElement } from "./dom";
+import { clear, element, setHidden, setText, textElement } from "./dom";
 import { epochSecondsToDate, formatActivityTime } from "./format";
 import { icon } from "./icons";
 
@@ -69,8 +69,8 @@ export function createActivityDrawer(initiallyOpen: boolean): ActivityDrawer {
         "aria-label",
         `${entries.length} ${entries.length === 1 ? "activity entry" : "activity entries"}`,
       );
-      empty.hidden = entries.length > 0;
-      list.hidden = entries.length === 0;
+      setHidden(empty, entries.length > 0);
+      setHidden(list, entries.length === 0);
       clear(list);
       for (const entry of entries) {
         const item = element("li", "mc-activity-entry");

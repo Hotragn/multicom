@@ -1,7 +1,7 @@
 import { SERVICE_NAME } from "../../shared/scenario";
-import type { RoomPhase, RoomState, ServiceStatus } from "../../shared/ws-messages";
+import type { RoomState, ServiceStatus } from "../../shared/ws-messages";
 import { element, setText, textElement } from "./dom";
-import { formatElapsed, phaseLabel } from "./format";
+import { formatElapsed, heroHeadline, phaseLabel } from "./format";
 import { icon, iconClass, type IconName } from "./icons";
 import type { ParticipationTier } from "./types";
 import { mountViz, type VizHandle } from "./viz";
@@ -37,13 +37,6 @@ const TIER_COPY: Record<ParticipationTier, { label: string; detail: string }> = 
   },
 };
 
-const HEADLINE: Record<RoomPhase, string> = {
-  triage: "Production is down",
-  diagnosing: "Three theories, one cause",
-  mitigating: "One fix, waiting on a human",
-  resolved: "Back to baseline",
-};
-
 export function createHero(): HeroSection {
   const root = element("section", "mc-hero");
   root.dataset.testid = "hero";
@@ -59,8 +52,9 @@ export function createHero(): HeroSection {
   const eyebrowText = textElement("span", "", "P1 incident");
   eyebrow.append(eyebrowText);
 
-  const title = textElement("h1", "mc-hero__title", HEADLINE.triage);
+  const title = textElement("h1", "mc-hero__title", heroHeadline("triage", 0));
   title.id = "mc-hero-title";
+  title.dataset.testid = "hero-title";
   const subtitle = textElement(
     "p",
     "mc-hero__subtitle",
@@ -104,7 +98,7 @@ export function createHero(): HeroSection {
     render({ room, status, tier: currentTier, elapsedSeconds }) {
       const phase = room?.phase ?? "triage";
       root.dataset.phase = phase;
-      setText(title, HEADLINE[phase]);
+      setText(title, heroHeadline(phase, room?.hypotheses.length ?? 0));
       setText(eyebrowText, phase === "resolved" ? "Incident resolved" : "P1 incident");
       setText(phaseValue, phaseLabel(phase));
       setText(elapsedValue, formatElapsed(elapsedSeconds));

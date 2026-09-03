@@ -36,7 +36,7 @@ export function createPresenceRail(): PresenceRail {
   root.dataset.testid = "presence-rail";
   root.setAttribute("aria-label", "People in this room");
   const list = element("ul", "mc-presence__list");
-  const summary = textElement("p", "mc-presence__summary", "No one here yet");
+  const summary = textElement("p", "mc-presence__summary", "Nobody seated yet");
   summary.dataset.testid = "presence-summary";
   root.append(list, summary);
 
@@ -80,9 +80,11 @@ export function createPresenceRail(): PresenceRail {
       const active = members.filter((member) => member.agentActive).length;
       setText(
         summary,
-        active === 0
-          ? "No one here yet"
-          : `${active} ${active === 1 ? "person" : "people"} in room`,
+        members.length === 0
+          ? "Nobody seated yet"
+          : active === 0
+            ? "Everyone is away"
+            : `${active} ${active === 1 ? "person" : "people"} in room`,
       );
       root.dataset.count = String(active);
       if (members.length === 0) {

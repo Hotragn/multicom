@@ -412,6 +412,47 @@ test("shows a live room to a judge who opens the demo link with no agent", async
   }
 });
 
+test("a self-serve room shows live health before anyone joins", async ({ browser }) => {
+  const context = await browser.newContext();
+  try {
+    const room = await provisionRoom();
+    const page = await newRoomPage(context, room);
+    await expect.poll(() => errorRate(page), { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect(page.getByTestId("presence-summary")).toContainText("Nobody seated yet");
+    await expect(page.getByTestId("agent-instruction")).toContainText("as commander");
+  } finally {
+    await context.close();
+  }
+});
+
+test("agent instruction and headline follow the live room", async ({ browser }) => {
+  test.setTimeout(45_000);
+  const context = await browser.newContext();
+  try {
+    const room = await provisionRoom();
+    const commander = await newRoomPage(context, room);
+    await join(commander, "Priya", "commander");
+    await expect(commander.getByTestId("spectator-banner")).toBeHidden();
+    await expect(commander.getByText("Room is quiet")).toBeHidden();
+
+    const visitor = await newRoomPage(context, room);
+    await expect(visitor.getByTestId("agent-instruction")).toContainText("as a responder");
+    await expect(visitor.getByTestId("agent-instruction")).not.toContainText("under the name Judge");
+
+    await visitor.getByTestId("drive-manually").click();
+    await expect(visitor.getByTestId("manual-name")).toHaveValue("");
+    await expect(visitor.getByTestId("manual-role")).toHaveValue("responder");
+    await expect(visitor.getByTestId("manual-confidence")).toHaveAttribute("aria-valuenow", "80");
+    await expect(visitor.getByTestId("manual-confidence")).not.toHaveAttribute("readonly");
+
+    await hypothesis(commander, "DB pool reduced to 1 connection");
+    await expect(commander.getByTestId("hero-title")).toHaveText("One theory on the board");
+    await expect(visitor.getByTestId("hero-title")).toHaveText("One theory on the board");
+  } finally {
+    await context.close();
+  }
+});
+
 test("restarts a spent demo room so the next visitor gets a live incident", async ({ browser }) => {
   test.setTimeout(40_000);
   const room = "demo-restart";

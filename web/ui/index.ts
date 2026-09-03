@@ -291,6 +291,7 @@ export function mountWarRoom(
     shell.activity.render(model.room);
     shell.onboarding.render({
       joined: model.joined,
+      room: model.room,
       tier,
       registration: model.registration,
       environment,
