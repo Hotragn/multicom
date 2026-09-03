@@ -1,0 +1,37 @@
+@font-face {
+  font-family: "Phosphor";
+  src: url("../../node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+.ph {
+  font-family: "Phosphor" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: 400;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  letter-spacing: 0;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ph.ph-arrows-counter-clockwise::before { content: "\e096"; }
+.ph.ph-broadcast::before { content: "\e0f2"; }
+.ph.ph-check-circle::before { content: "\e184"; }
+.ph.ph-clock-countdown::before { content: "\ed2c"; }
+.ph.ph-gauge::before { content: "\e628"; }
+.ph.ph-lightbulb::before { content: "\e2dc"; }
+.ph.ph-list-bullets::before { content: "\e2f2"; }
+.ph.ph-magnifying-glass::before { content: "\e30c"; }
+.ph.ph-shield-check::before { content: "\e40c"; }
+.ph.ph-users-three::before { content: "\e68e"; }
+.ph.ph-warning-octagon::before { content: "\e4e4"; }
+.ph.ph-wifi-high::before { content: "\e4ea"; }
+.ph.ph-wifi-slash::before { content: "\e4f2"; }
+.ph.ph-wrench::before { content: "\e5d4"; }
+.ph.ph-x-circle::before { content: "\e4f8"; }
