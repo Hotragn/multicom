@@ -72,7 +72,7 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
   const subheading = textElement(
     "p",
     "mc-onboarding__subheading",
-    "This URL is already the shared room. Invite a teammate from the bar above, then pick how you take part. All three paths use the same protocol and the same safety gates.",
+    "Invite from the bar above, then pick how you take part.",
   );
   headline.append(heading, subheading);
   header.append(headline);
@@ -87,7 +87,7 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
   const seatNote = textElement(
     "p",
     "mc-tier__note",
-    "Send it the instruction below rather than pointing it at this page: it asks your agent to take the commander seat, which is what puts the approval dialog in front of you. Your agent cannot approve a fix — only your click can.",
+    "Send the instruction below to your agent. It cannot approve a fix — only the commander’s click can.",
   );
   agentTier.root.insertBefore(seatNote, agentTier.footer);
   agentTier.root.dataset.testid = "tier-agent";

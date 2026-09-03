@@ -7,6 +7,7 @@ import { createActivityDrawer, type ActivityDrawer } from "./activity";
 import { createApprovalDialog, type ApprovalDialog } from "./approval-dialog";
 import { createDashboard, type DashboardSection, type StatusPoint } from "./dashboard";
 import { button, element, prefersReducedMotion, setHidden, setText, textElement } from "./dom";
+import { createBrand } from "./brand";
 import { createHero, type HeroSection } from "./hero";
 import { icon, iconClass } from "./icons";
 import { createInviteStrip, type InviteStrip } from "./invite";
@@ -505,10 +506,7 @@ export function mountWarRoom(
 
     // Topbar -----------------------------------------------------------------
     const topbar = element("div", "mc-topbar");
-    const brand = element("div", "mc-brand");
-    brand.append(icon("broadcast", "mc-brand__icon"));
-    brand.append(textElement("span", "mc-brand__name", "multicom"));
-    brand.append(textElement("span", "mc-brand__context", "Incident room"));
+    const brand = createBrand({ home: true, context: "Back to lobby" }).root;
 
     const roomChip = element("span", "mc-room-chip");
     roomChip.dataset.testid = "room-code";

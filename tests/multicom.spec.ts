@@ -373,7 +373,7 @@ test("shows a live room to a judge who opens the demo link with no agent", async
     // end. Every judge must now be offered a path that works where they are.
     const onboarding = page.getByTestId("spectator-banner");
     await expect(onboarding).toBeVisible();
-    await expect(onboarding).toContainText("This URL is already the shared room");
+    await expect(onboarding).toContainText("Invite from the bar above");
     await expect(page.getByTestId("tier-agent")).toBeVisible();
     await expect(page.getByTestId("agent-instruction")).toContainText("Join this incident room");
     await expect(page.getByTestId("drive-manually")).toBeEnabled();
@@ -805,7 +805,7 @@ test("the lobby provisions an isolated room and opens it", async ({ browser }) =
     const page = await context.newPage();
     await page.goto(`${app.origin}/`);
     await expect(page.getByTestId("lobby")).toBeVisible();
-    await expect(page.getByTestId("site-onboarding")).toContainText("Invite a person");
+    await expect(page.getByTestId("site-onboarding")).toContainText("Invite someone");
     await expect(page.getByTestId("start-own-incident")).toBeVisible();
     await expect(page.getByTestId("watch-live-demo")).toBeVisible();
 
@@ -819,6 +819,9 @@ test("the lobby provisions an isolated room and opens it", async ({ browser }) =
     await expect(page.getByTestId("room-code")).toContainText(minted.slice(1, 5).toUpperCase());
     await expect(page.getByTestId("invite-strip")).toContainText("waiting for people");
     await expect(page.getByTestId("copy-invite")).toBeVisible();
+    await expect(page.getByTestId("home-link")).toBeVisible();
+    await page.getByTestId("home-link").click();
+    await expect(page.getByTestId("lobby")).toBeVisible();
   } finally {
     await context.close();
   }

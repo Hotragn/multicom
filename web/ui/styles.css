@@ -186,6 +186,9 @@
 /* --- topbar --------------------------------------------------------------- */
 
 .mc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   min-height: 4rem;
   align-items: center;
@@ -193,29 +196,50 @@
   gap: 1rem;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--mc-line);
+  background: color-mix(in srgb, var(--mc-bg) 88%, transparent);
+  backdrop-filter: blur(14px);
 }
 
 .mc-brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.mc-brand__copy {
+  display: grid;
+  line-height: 1.15;
 }
 
 .mc-brand__icon {
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   color: var(--mc-phase-accent);
 }
 
 .mc-brand__name {
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .mc-brand__context {
   color: var(--mc-faint);
-  font-size: 0.85rem;
-  padding-left: 0.6rem;
-  border-left: 1px solid var(--mc-line);
+  font-size: 0.75rem;
+}
+
+.mc-brand--home {
+  border-radius: var(--mc-radius);
+  padding: 0.2rem 0.35rem 0.2rem 0.15rem;
+  margin-left: -0.15rem;
+}
+
+.mc-brand--home:hover {
+  background: var(--mc-surface);
+}
+
+.mc-brand--home:hover .mc-brand__context {
+  color: var(--mc-accent);
 }
 
 .mc-topbar__controls {

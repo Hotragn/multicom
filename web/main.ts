@@ -77,6 +77,7 @@ function fail(message: string): never {
 const roomId = requestedRoomId();
 
 if (roomId === null) {
+  document.title = "multicom · Start an incident";
   // --- Lobby ----------------------------------------------------------------
   let origin: string | null = null;
   try {
@@ -101,6 +102,7 @@ if (roomId === null) {
     },
   });
 } else {
+  document.title = `${shortRoomCode(roomId)} · multicom`;
   // --- Room -----------------------------------------------------------------
   const demo = params.get("demo") === "1";
   const commanderToken = params.get("commander") ?? undefined;

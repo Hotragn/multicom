@@ -134,9 +134,9 @@ export const FIRST_AGENT_INSTRUCTION = agentInstruction(false);
 
 export function agentSeatNote(commanderTaken: boolean): string {
   if (commanderTaken) {
-    return "Send it the instruction below rather than pointing it at this page: the commander seat is already taken, so it should join as a responder. Your agent cannot approve a fix — only the seated commander's click can.";
+    return "Send the instruction below to your agent as a responder. It cannot approve a fix — only the seated commander’s click can.";
   }
-  return "Send it the instruction below rather than pointing it at this page: it asks your agent to take the commander seat, which is what puts the approval dialog in front of you. Your agent cannot approve a fix — only your click can.";
+  return "Send the instruction below to your agent. It cannot approve a fix — only the commander’s click can.";
 }
 
 export function heroHeadline(phase: string, hypothesisCount: number): string {

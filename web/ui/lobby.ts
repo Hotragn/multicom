@@ -1,6 +1,7 @@
 import "./phosphor.css";
 import { SERVICE_NAME } from "../../shared/scenario";
 import { button, element, prefersReducedMotion, setText, textElement } from "./dom";
+import { createBrand } from "./brand";
 import { icon } from "./icons";
 import { mountViz } from "./viz";
 import "./styles.css";
@@ -54,11 +55,7 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
   skipLink.href = "#mc-guide-heading";
 
   const topbar = element("div", "mc-topbar");
-  const brand = element("div", "mc-brand");
-  brand.append(icon("broadcast", "mc-brand__icon"));
-  brand.append(textElement("span", "mc-brand__name", "multicom"));
-  brand.append(textElement("span", "mc-brand__context", "Incident war room"));
-  topbar.append(brand);
+  topbar.append(createBrand({ home: false, context: "Incident war room" }).root);
 
   const hero = element("section", "mc-hero mc-hero--lobby");
   const stage = element("div", "mc-viz");
@@ -82,7 +79,7 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
   const subtitle = textElement(
     "p",
     "mc-hero__subtitle",
-    `${SERVICE_NAME} is failing at 23% and checkout is timing out. Several engineers and their browser agents diagnose it together in one page — and a human still has to approve the fix.`,
+    `${SERVICE_NAME} is at 23% errors. Open one room with your teammates and their agents. A human still has to approve the fix.`,
   );
   copy.append(eyebrow, title, subtitle);
   hero.append(stage, copy);
@@ -96,26 +93,26 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
   const guideSub = textElement(
     "p",
     "mc-guide__sub",
-    "This is a multiplayer room, not a single-agent chat. The page you open is the same board everyone else sees.",
+    "This is a multiplayer room. The page you open is the board everyone else sees.",
   );
   guideIntro.append(guideHeading, guideSub);
   const steps = element("ol", "mc-guide__steps");
   const GUIDE_STEPS: Array<{ title: string; body: string }> = [
     {
-      title: "Start or open a room",
-      body: "Start your own incident for a private copy of the fault, or open an invite someone sent you. Watch the live demo only if you want the curated public room.",
+      title: "Start a room",
+      body: "Your own incident, or an invite you were sent. The live demo is the public curated room.",
     },
     {
-      title: "Invite a person",
-      body: "In the room, copy the invite link and open it in a second browser — or send it to a teammate. They land on the same live board. Isolation is from other judges, not from collaborators.",
+      title: "Invite someone",
+      body: "Copy the invite in the room. A second browser lands on the same board.",
     },
     {
-      title: "Take seats, then bring agents",
-      body: "One person claims commander (that click is the only approval). Everyone else joins as responder. Each person copies the agent instruction from their own page so their agent joins the same room.",
+      title: "Take seats",
+      body: "One commander holds Approve. Everyone else joins as responder, then may bring an agent.",
     },
     {
-      title: "Argue, vote, approve",
-      body: "Evidence, theories, and votes appear for everyone at once. A majority is not a write. The commander clicks Approve; then the graph can go green.",
+      title: "Fix it together",
+      body: "Evidence and votes are shared. A majority is not a write. The commander clicks Approve.",
     },
   ];
   for (const [index, step] of GUIDE_STEPS.entries()) {
