@@ -110,10 +110,11 @@ commander models, [TESTING.md](docs/TESTING.md) for the coverage map,
 [AGENT-DRILL.md](docs/AGENT-DRILL.md) for two real language-model agents working
 the incident unaided.
 
-**Status:** deployed 2026-09-03 afternoon and verified against the live Workers.
-The link above serves this build: room `29f046b8`, target `f70f44ab`, Pages
-`index--7Sdm-Wg.js`. Smoke 9/9, live acceptance 32/32. A bystander room stayed
-at 23% while the worked room recovered to 1%. See [TESTING.md](docs/TESTING.md).
+**Status:** deployed 2026-09-03 and verified against the live Workers. The link
+above serves this build: room `29f046b8`, target `f70f44ab`, Pages
+`index-SQf37RBN.js`. Smoke 9/9, live acceptance 32/32, re-run against this exact
+bundle. A bystander room stayed at 23% while the worked room recovered to 1%.
+See [TESTING.md](docs/TESTING.md).
 
 ## License
 

@@ -1,48 +1,98 @@
 # 90-second demo
 
+The story is the one a judge lives: **open a link, get your own incident, and
+find you cannot approve the fix by yourself.** Everything else is supporting
+detail.
+
 ## Before recording
 
-- Check <https://multicom-storefront-api.multicom-target.workers.dev/status> and
-  wait until `errorRate` reads `0.23`. The scripted fault is one global state, so
-  for five minutes after anyone completes a run the service is genuinely healthy
-  and every room reports it that way. It re-arms itself after that.
-- Use two browser sessions in the same room: one private commander link and one responder link.
-- Start with the scripted fault armed and both health indicators red.
-- Keep the browser console closed and zoom at 100%.
-- Record original narration and system audio only.
-- Keep the finished video under three minutes; the target cut is 90 seconds.
+- **Provision a fresh room from the lobby.** Open
+  <https://multicom-web.pages.dev/> and click **Start my own incident**. Do not
+  reuse a room, and do not use `?demo=1` for the main take — the curated room is
+  shared with anyone else watching and its board may already be full.
+- A newly minted room is armed by construction, so there is nothing to wait for.
+  If you want to check, the room's own copy of the fault reads 23%:
+
+  ```bash
+  curl -s -H "X-Multicom-Tenant: <roomId>" \
+    https://multicom-storefront-api.multicom-target.workers.dev/status
+  ```
+
+  Each room has its own scenario. Nothing another person does can heal yours,
+  and finishing your run cannot spoil anyone else's — which is the point of
+  §19 and worth one sentence of narration.
+- Have two browser windows on the **same room link**: yours as commander, one
+  more as a responder, copied from the room's invite strip. A second window is
+  what makes this a room rather than a page.
+- Keep the console closed, zoom at 100%, and record original narration plus
+  system audio only.
+- Target cut is 90 seconds; keep the finished video under three minutes.
 
 ## Storyboard
 
-**0:00–0:08 — The problem**
+**0:00–0:10 — One link, your own incident**
 
-Show the critical status header. Say: “Production is down. Three engineers, three browser agents, one shared incident room.”
+Open the lobby. Click **Start my own incident**. Land in the room with the fault
+already live. Say: “One link. I get my own copy of a failing production service,
+and I am the commander — no secret, no setup, nobody else in my way.”
 
-**0:08–0:22 — Native agent access**
+**0:10–0:22 — It is a room, not a page**
 
-Show two agents calling `join_room` and `get_service_status`. Briefly reveal the browser's registered WebMCP tools. Say: “The page exposes twelve narrow tools. No copy-paste and no hidden backend integration.”
+Copy the invite from the strip, open it in the second window, join as a
+responder. Both windows update. Say: “Anyone I send this to lands on the same
+live board. The isolation is from other judges, not from my own team.”
 
-**0:22–0:48 — Evidence and disagreement**
+**0:22–0:32 — Native agent access**
 
-Query logs, run `pool_in_use`, and show hypotheses arrive in both sessions. Point at the injection-trap line. Say: “Logs are marked untrusted and rendered only as text. The agents use the evidence, but never follow the instruction inside it.”
+Reveal the browser's registered WebMCP tools. Show `join_room` and
+`get_service_status` being called. Say: “The page exposes twelve narrow tools to
+the browser itself. No copy-paste, no hidden backend integration.”
 
-**0:48–1:08 — Decide safely**
+**0:32–0:52 — Evidence, and a theory that loses**
 
-Propose `scale_pool:default`, vote from both participants, and request confirmation. Show the commander dialog. Say: “Agents can argue and vote, but they cannot approve their own write.” Click approve.
+Query logs, run `pool_in_use`, let both windows fill. Point at the injection
+line. Point at the flag theory being rebutted. Say: “Logs come back marked
+untrusted and render only as text. The agents use the evidence and never follow
+the instruction planted inside it — and the theory that fits the flag loses to
+the one that fits the timeline.”
 
-**1:08–1:23 — Verify recovery**
+**0:52–1:12 — The gate**
 
-Apply the mitigation. Hold on the falling error rate until both pages turn green. Say: “The room verifies the target after the action. Every connected tab resolves together.”
+Propose `scale_pool:default`, vote from both windows, request confirmation. Hold
+on the approval overlay: the action id, the blast radius, who voted and why, the
+countdown. Say: “Agents can argue, vote, and ask. Not one of the twelve tools
+can produce this approval. It takes my click.” Click **Approve**.
 
-**1:23–1:30 — Close**
+**1:12–1:24 — Verify**
 
-Show the resolved summary and activity history. Say: “multicom: a multiplayer incident room built directly on WebMCP.”
+Apply. Hold on the error rate falling until both windows turn green together.
+Say: “The room re-reads the service after the write. Every connected window
+resolves together.”
+
+**1:24–1:30 — Close**
+
+Open the judge console. Show the rubric filled from real events and the run
+summary. Say: “Every row is backed by a logged event, and it exports. multicom:
+a multiplayer incident room built directly on WebMCP.”
 
 ## Capture list
 
-- Critical status header with MTTR timer
-- Two sessions showing the same new hypothesis
-- Literal injection-trap log output
-- Passed mitigation and human confirmation dialog
-- Resolved state in both sessions
-- Browser tool list showing exactly 12 tools
+- The lobby, with both ways in
+- A minted room code in the topbar, and the invite strip
+- The same hypothesis landing in two windows
+- The injection-trap line rendered as literal text
+- The flag theory marked challenged next to the pool theory
+- The approval overlay: action id, blast radius, voters, countdown
+- Both windows resolved together at 1%
+- The judge console rubric and run summary
+- The browser tool list showing exactly 12 tools
+
+## What not to claim
+
+- **Not** “the scripted fault is one global state.” It was until the multi-judge
+  rework; it is now one scenario object per room, and the old sentence undercuts
+  the whole point.
+- **Not** that agents are autonomous through the approval. They are stopped at
+  it, deliberately, and that is the strongest thing in the demo.
+- **Not** a specific number of theories on the board. The headline is derived
+  from what is actually there.

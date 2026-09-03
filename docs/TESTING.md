@@ -109,10 +109,20 @@ a `.commander-token` on disk must not silently change what is being tested.
 
 ### Verified against production, 2026-09-03 (afternoon)
 
-Room Worker `29f046b8`, target `f70f44ab`, Pages serving `index--7Sdm-Wg.js`.
-This is the multi-judge build plus spectator health and seat-derived agent copy.
-Everything below ran against `https://multicom-web.pages.dev` and the deployed
-Workers, with no secret supplied anywhere.
+Room Worker `29f046b8`, target `f70f44ab`, Pages serving `index-SQf37RBN.js`.
+This is the multi-judge build plus spectator health, seat-derived agent copy, the
+lobby session guide and the room invite strip. Everything below ran against
+`https://multicom-web.pages.dev` and the deployed Workers, with no secret
+supplied anywhere.
+
+Record the **bundle hash**, not just the date. Three UI commits shipped after the
+first afternoon deploy while these lines still named `index--7Sdm-Wg.js`, so the
+recorded pass numbers were attached to a build that was no longer live. Read the
+live hash before believing a row here:
+
+```bash
+curl -s https://multicom-web.pages.dev/ | grep -o 'index-[A-Za-z0-9_-]*\.js'
+```
 
 | Pass | Result |
 | --- | --- |

@@ -14,11 +14,11 @@ Incident response is already collaborative, but AI help is usually one agent in 
 
 **What can people and agents do together now that they could not before?**
 
-Several engineers' agents can investigate one live incident in one shared page, cite evidence, and argue against each other's theories — then a server-counted majority plus one fresh human approval decides the fix. A planted log line instructs agents to skip diagnosis and roll back immediately. It stays literal, is marked untrusted, and no agent obeys it.
+Several engineers' agents can investigate one live incident in one shared page, cite evidence, and argue against each other's theories — then a server-counted majority plus one fresh human approval decides the fix. Open the link and you get your own isolated copy of the incident and the commander seat, with no shared secret, so several people can evaluate at once without touching each other's run. A planted log line tells agents to skip diagnosis and roll back immediately. It stays literal, is marked untrusted, and no agent obeys it.
 
 **How did you implement WebMCP?**
 
-A static TypeScript and Vite client registers the surface once, with an MCP-B fallback and no iframes. A Cloudflare Worker maps each room to one Durable Object that holds presence, boards, votes, approvals, and replay protection. A second Worker runs the scripted storefront fault and accepts only three known action IDs behind a bearer token. Approval text is server-derived, expires in 60 seconds, and is consumed before the target is called.
+A static TypeScript and Vite client registers the surface once, with an MCP-B fallback and no iframes. A Cloudflare Worker maps each room to one Durable Object holding presence, boards, votes, approvals, and replay protection; a lobby object mints unguessable room IDs on demand. A second Worker runs the scripted fault and keys its state per room, so resolving one incident cannot heal anybody else's. It accepts only three known action IDs behind a bearer token. Approval text is server-derived, expires in 60 seconds, and is consumed before the target is called.
 
 Everything below is supporting working copy for the rest of the project page.
 
@@ -84,7 +84,7 @@ Run `npm test`. The command checks TypeScript and 71 automated behaviors: 46 uni
 - Room Worker health: <https://multicom-room.multicom-target.workers.dev/health>
 - Target Worker health: <https://multicom-storefront-api.multicom-target.workers.dev/health>
 - Public repository: <https://github.com/Hotragn/multicom>
-- Demo video: **TODO — upload the verified under-three-minute cut**
+- Demo video: **TODO — record from the [DEMO.md](DEMO.md) storyboard, then upload the under-three-minute cut**
 
 ## Screenshots
 
@@ -146,8 +146,8 @@ Two limitations from the earlier build are now fixed rather than documented. The
 - [x] A judge with no WebMCP browser can still run the whole loop, by hand or via the scripted drill
 - [x] The multi-judge rework deployed to production (room `29f046b8`, target `f70f44ab`, smoke 9/9, live acceptance 32/32)
 - [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
-- [x] Interface screenshots captured and indexed
-- [x] Final Devpost field copy written (252 words, under the 300-word limit)
+- [x] Interface screenshots captured and indexed, regenerated against the shipped interface
+- [x] Final Devpost field copy written (307 words across four fields, each well under the 300-word per-field limit), covering the per-judge isolation and the lobby
 - [x] Real WebMCP client verified: 12 tools register natively in Chrome 152 behind `enable-webmcp-testing`, with a polyfill-fallback control
-- [ ] Public YouTube demo with audio
+- [ ] Public YouTube demo with audio — storyboard rewritten for the judge path in [DEMO.md](DEMO.md); needs recording
 - [ ] Devpost project page filled in and verified from a logged-out browser

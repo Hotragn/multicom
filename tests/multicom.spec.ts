@@ -91,11 +91,25 @@ async function beginConfirmation(page: Page, mitigationId: string): Promise<void
   }, { id: mitigationId });
 }
 
-async function finishPending<T>(page: Page): Promise<T> {
-  return page.evaluate(async () => {
+/**
+ * Await the confirmation a `beginConfirmation` started.
+ *
+ * Bounded deliberately. `request_human_confirm` waits up to 65 seconds on the
+ * client, which is longer than any test budget here, so a lost approval used to
+ * surface only as "Test timeout of Ns exceeded" with no indication of which
+ * await was stuck. Failing at 20s names the actual problem instead.
+ */
+async function finishPending<T>(page: Page, timeoutMs = 20_000): Promise<T> {
+  return page.evaluate(async (limit) => {
     if (!window.__pendingTool) throw new Error("No pending tool call.");
-    return window.__pendingTool;
-  }) as Promise<T>;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      setTimeout(
+        () => reject(new Error(`The pending confirmation did not settle within ${limit}ms.`)),
+        limit,
+      );
+    });
+    return Promise.race([window.__pendingTool, timeout]);
+  }, timeoutMs) as Promise<T>;
 }
 
 /** Provision a room the way the lobby does, and hand back its minted id. */
@@ -295,7 +309,12 @@ test("enforces passage, approval binding, expiry, and single-use replay protecti
 });
 
 test("real mitigation turns every connected tab healthy and resolved within ten seconds", async ({ browser }) => {
-  test.setTimeout(25_000);
+  // Two contexts, two page loads, a full debate, an approval and a six-second
+  // recovery curve. Measured 8.8s to 15.0s end to end, so the old 25s ceiling —
+  // itself below the suite's 30s default — failed three runs in five under
+  // repetition. The ten-second recovery assertion below is the product claim
+  // and is unchanged; this budget only covers getting there.
+  test.setTimeout(60_000);
   const first = await browser.newContext();
   const second = await browser.newContext();
   try {
@@ -362,7 +381,9 @@ test("demo mode joins and argues through the shared protocol on schedule", async
 });
 
 test("shows a live room to a judge who opens the demo link with no agent", async ({ browser }) => {
-  test.setTimeout(25_000);
+  // Waits on the house responder's scheduled hypothesis, so it is paced by the
+  // room rather than by this process. Same reasoning as the recovery journey.
+  test.setTimeout(60_000);
   const context = await browser.newContext();
   try {
     // No join_room call anywhere in this test: this is the cold-open judge path.
