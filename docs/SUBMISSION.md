@@ -103,10 +103,12 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 | 8 | `08-judge-cold-open.png` | What a visitor sees with no agent attached: live metrics, the house responder's theory, and the watching notice |
 | 9 | `09-live-production.png` | The deployed build serving the same cold open |
 | 10 | `10-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
+| 11 | `11-real-chrome.png` | The deployed room in real Chrome with native WebMCP enabled |
 
-One shot still needs a live capture by hand, because it exists only in the agent
-client rather than in the page: the browser WebMCP tool list showing all twelve
-tools in ChatGPT desktop.
+The twelfth-tool surface is evidenced by `docs/webmcp-chrome-report.json`
+rather than a screenshot of a client menu: it records the tool names, the
+longest description, and the polyfill-versus-native A/B, and it regenerates
+from `tools/chrome-webmcp-check.mjs`.
 
 ## Known limitations
 
@@ -126,6 +128,6 @@ This challenge build ships one scripted incident, capability-link commander acce
 - [ ] `TARGET_TOKEN` set on the deployed room Worker, so `apply_mitigation` works in production
 - [x] Interface screenshots captured and indexed
 - [x] Final Devpost field copy written (252 words, under the 300-word limit)
-- [ ] WebMCP tool-list screenshot from ChatGPT desktop
+- [x] Real WebMCP client verified: 12 tools register natively in Chrome 152 behind `enable-webmcp-testing`, with a polyfill-fallback control
 - [ ] Public YouTube demo with audio
 - [ ] Devpost project page filled in and verified from a logged-out browser

@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-03T05:47:00.388Z",
+  "target": "https://multicom-web.pages.dev/?demo=1",
+  "profile": "C:\\Users\\hotra\\AppData\\Local\\Temp\\multicom-webmcp-profile",
+  "flag": "enable-webmcp-testing",
+  "flagToggle": {
+    "ok": true,
+    "chose": "Enabled"
+  },
+  "secureOrigin": {
+    "navigator": "undefined",
+    "document": "object",
+    "registerTool": "function",
+    "polyfillBrand": false
+  },
+  "nativeWebMcp": true,
+  "deployedPage": {
+    "count": 12,
+    "longestDescription": 74,
+    "names": [
+      "apply_mitigation",
+      "counter_hypothesis",
+      "explain_vote",
+      "get_room_state",
+      "get_service_status",
+      "join_room",
+      "propose_hypothesis",
+      "propose_mitigation",
+      "query_logs",
+      "request_human_confirm",
+      "run_check",
+      "vote"
+    ],
+    "viaPolyfill": false
+  },
+  "controlDeployedPage": {
+    "count": 12,
+    "viaPolyfill": true
+  },
+  "conclusion": "native WebMCP confirmed: with the flag on the page registers into the browser API; with it off the same page falls back to the polyfill"
+}

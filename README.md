@@ -9,7 +9,7 @@ The included incident is deterministic: `storefront-api` is failing because its 
 ## What works
 
 - Real-time rooms backed by a Cloudflare Durable Object
-- Exactly 11 imperative WebMCP tools, with MCP-B fallback support
+- Exactly 12 imperative WebMCP tools, native in Chrome behind its WebMCP flag, with MCP-B fallback otherwise
 - Evidence, hypothesis, rebuttal, mitigation, and voting workflow
 - Vote rationales, so an objection is more than a bare no
 - Server-owned action allowlist; agents cannot invent production writes

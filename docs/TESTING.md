@@ -49,7 +49,8 @@ the actual deployed Workers:
 - [ ] Opening the demo link with no agent shows live metrics and the house responder.
 - [ ] A responder cannot claim commander without the capability.
 - [ ] Two separate browser sessions join the same room.
-- [ ] The agent can call all 12 tools through the real browser WebMCP surface.
+- [x] All 12 tools register into Chrome's native WebMCP surface (see `docs/webmcp-chrome-report.json`).
+- [ ] An agent drives join, query, propose, vote and confirm through that surface with one instruction.
 - [ ] A hypothesis appears in both sessions promptly.
 - [ ] The injection-trap log stays literal.
 - [ ] Apply fails before vote and approval.
@@ -77,6 +78,26 @@ Verified against the deployed Workers on September 3, 2026:
 Not yet verified live, and currently blocked: `apply_mitigation`. The room Worker
 has no `TARGET_TOKEN`, so the target answers its action calls with 403. Set that
 secret on the room Worker before running the checklist below.
+
+## Against a real WebMCP browser
+
+Chrome exposes the API behind a flag. This drives the flags UI in a throwaway
+profile, then checks what the deployed page actually registered into:
+
+```bash
+node tools/chrome-webmcp-check.mjs
+```
+
+It runs an A/B, because "not the polyfill" only means something next to a
+control: with `enable-webmcp-testing` on, the page registers 12 tools into the
+browser's own surface; with a clean profile and the flag off, the same page
+falls back to the MCP-B polyfill. Results land in
+`docs/webmcp-chrome-report.json`.
+
+Worth knowing: Chrome's native surface is `document.modelContext`, and
+`navigator.modelContext` stays `undefined`. The registration in
+`web/tools/register.ts` checks `document` first for exactly this reason, so a
+`navigator`-only feature detect would silently miss native support.
 
 ## Against the real Workers
 

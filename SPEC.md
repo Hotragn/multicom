@@ -367,8 +367,22 @@ multicom/
    (Was 11. `explain_vote` was added after a drill in which two agents could
    only register a bare "no" on a mitigation they objected to; see
    `docs/AGENT-DRILL.md`.)
-8. ChatGPT desktop (GPT-5.6 Sol): an agent joins, queries, proposes, votes,
-   and requests confirmation with no typed help beyond the first instruction.
+8. A real WebMCP client sees the surface, and an agent drives the workflow
+   with no typed help beyond the first instruction.
+
+   Verified through Chrome rather than ChatGPT desktop, by decision on
+   2026-09-03. Chrome 152 with `chrome://flags/#enable-webmcp-testing` enabled
+   exposes the API natively and the deployed page registers all 12 tools into
+   it; with the flag off the same page falls back to the MCP-B polyfill. Both
+   halves of that A/B are recorded in `docs/webmcp-chrome-report.json` and
+   reproduced by `tools/chrome-webmcp-check.mjs`.
+
+   The unaided-agent half is covered by `docs/AGENT-DRILL.md`, where two
+   language-model agents worked the incident from the tool surface alone.
+
+   ChatGPT desktop is out of scope: its site tools need a GPT-5.6 Sol or Terra
+   model and are unavailable in Enterprise or Edu workspaces, so it is not a
+   dependency this project will carry.
 9. `npm run test` (Playwright, two contexts) green.
 10. Repo: MIT license file, visible in About; commits timestamped today.
 
