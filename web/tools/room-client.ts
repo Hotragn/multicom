@@ -13,6 +13,7 @@ import type {
   RoomRole,
   VoteChoice,
 } from "../../shared/tools.ts";
+import { ACTION_LIBRARY, CHECK_IDS } from "../../shared/tools.ts";
 import { abortError, RoomClientError } from "./errors.ts";
 
 const SOCKET_OPEN = 1;
@@ -94,6 +95,99 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const isBoundedString = (value: unknown, maximum = 1_024): value is string =>
+  typeof value === "string" && value.length <= maximum;
+
+const isId = (value: unknown): value is string =>
+  isBoundedString(value, 80) && /^[A-Za-z0-9_-]+$/.test(value);
+
+const isStringArray = (value: unknown, maximumItems: number, maximumLength: number): value is string[] =>
+  Array.isArray(value) &&
+  value.length <= maximumItems &&
+  value.every((item) => isBoundedString(item, maximumLength));
+
+function isVoteRecord(value: unknown): value is Record<string, VoteChoice> {
+  if (!isRecord(value) || Object.keys(value).length > 12) return false;
+  return Object.entries(value).every(
+    ([memberId, choice]) => isId(memberId) && (choice === "yes" || choice === "no"),
+  );
+}
+
+function isServiceStatus(value: unknown): value is ServiceStatus {
+  if (!isRecord(value) || !isFiniteNumber(value.errorRate) || !isFiniteNumber(value.p99ms)) return false;
+  if (!isBoundedString(value.currentDeploy, 120) || !isRecord(value.flagStates)) return false;
+  if (Object.keys(value.flagStates).length > 32 || !Object.values(value.flagStates).every((flag) => typeof flag === "boolean")) return false;
+  return isRecord(value.pool) && isFiniteNumber(value.pool.inUse) && isFiniteNumber(value.pool.max);
+}
+
+function isRoomState(value: unknown): value is RoomState {
+  if (!isRecord(value) || !isId(value.id)) return false;
+  if (!["triage", "diagnosing", "mitigating", "resolved"].includes(String(value.phase))) return false;
+  if (!isFiniteNumber(value.incidentStartedAt) || !(value.resolvedAt === null || isFiniteNumber(value.resolvedAt))) return false;
+  if (!Array.isArray(value.members) || value.members.length > 30 || !value.members.every((member) =>
+    isRecord(member) && isId(member.id) && isBoundedString(member.name, 40) &&
+    (member.role === "commander" || member.role === "responder") && typeof member.agentActive === "boolean"
+  )) return false;
+  if (!Array.isArray(value.hypotheses) || value.hypotheses.length > 5 || !value.hypotheses.every((hypothesis) =>
+    isRecord(hypothesis) && isId(hypothesis.id) && isId(hypothesis.by) &&
+    isBoundedString(hypothesis.title, 120) && isBoundedString(hypothesis.evidence, 400) &&
+    isFiniteNumber(hypothesis.confidence) && hypothesis.confidence >= 0 && hypothesis.confidence <= 1 &&
+    Array.isArray(hypothesis.rebuttals) && hypothesis.rebuttals.length <= 10 && hypothesis.rebuttals.every((rebuttal) =>
+      isRecord(rebuttal) && isId(rebuttal.by) && isBoundedString(rebuttal.evidence, 400)
+    ) && isVoteRecord(hypothesis.votes)
+  )) return false;
+  if (!Array.isArray(value.mitigations) || value.mitigations.length > 3 || !value.mitigations.every((mitigation) =>
+    isRecord(mitigation) && isId(mitigation.id) && isId(mitigation.hypothesisId) &&
+    typeof mitigation.actionId === "string" && (ACTION_LIBRARY as readonly string[]).includes(mitigation.actionId) &&
+    isBoundedString(mitigation.blastRadius, 200) && isVoteRecord(mitigation.votes) &&
+    typeof mitigation.passed === "boolean"
+  )) return false;
+  if (!Array.isArray(value.appliedActions) || value.appliedActions.length > ACTION_LIBRARY.length || !value.appliedActions.every((action) =>
+    typeof action === "string" && (ACTION_LIBRARY as readonly string[]).includes(action)
+  )) return false;
+  return Array.isArray(value.log) && value.log.length <= 60 && value.log.every((entry) =>
+    isRecord(entry) && isFiniteNumber(entry.t) && isBoundedString(entry.text, 180)
+  );
+}
+
+function isCheckResult(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.checkId !== "string" || !(CHECK_IDS as readonly string[]).includes(value.checkId)) return false;
+  switch (value.checkId) {
+    case "pool_in_use":
+      return isFiniteNumber(value.inUse) && isFiniteNumber(value.max);
+    case "flag_states":
+      return isRecord(value.flags) && Object.keys(value.flags).length <= 32 && Object.values(value.flags).every((flag) => typeof flag === "boolean");
+    case "deploy_diff":
+      return isBoundedString(value.deploy, 120) && isStringArray(value.changes, 40, 500);
+    case "error_timeline":
+      return Array.isArray(value.points) && value.points.length <= 120 && value.points.every((point) =>
+        isRecord(point) && isFiniteNumber(point.t) && isFiniteNumber(point.errorRate)
+      );
+    default:
+      return false;
+  }
+}
+
+function isToolResultData(value: unknown): value is ToolResultData {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  switch (value.kind) {
+    case "room_state": return isRoomState(value.state);
+    case "service_status": return isServiceStatus(value.status);
+    case "logs": return value.untrustedContentHint === true && isStringArray(value.lines, 200, 2_000);
+    case "check": return isCheckResult(value.result);
+    case "hypothesis": return isId(value.hypothesisId);
+    case "counter": return isId(value.hypothesisId);
+    case "mitigation": return isId(value.mitigationId);
+    case "vote": return isFiniteNumber(value.yes) && isFiniteNumber(value.no) && typeof value.passed === "boolean";
+    case "confirm": return typeof value.approved === "boolean";
+    case "apply": return typeof value.applied === "boolean" && isServiceStatus(value.status);
+    default: return false;
+  }
+}
+
 function parseServerMessage(raw: unknown): ServerMessage | null {
   if (typeof raw !== "string" || raw.length > 256_000) return null;
   try {
@@ -102,35 +196,33 @@ function parseServerMessage(raw: unknown): ServerMessage | null {
 
     switch (parsed.type) {
       case "joined":
-        return typeof parsed.memberId === "string" && isRecord(parsed.state)
+        return isId(parsed.memberId) && isRoomState(parsed.state)
           ? (parsed as unknown as ServerMessage)
           : null;
       case "state":
-        return isRecord(parsed.state) ? (parsed as unknown as ServerMessage) : null;
+        return isRoomState(parsed.state) ? (parsed as unknown as ServerMessage) : null;
       case "event":
-        return typeof parsed.text === "string" ? (parsed as unknown as ServerMessage) : null;
+        return isBoundedString(parsed.text, 180) ? (parsed as unknown as ServerMessage) : null;
       case "status":
-        return typeof parsed.errorRate === "number" && typeof parsed.p99ms === "number"
+        return isServiceStatus(parsed)
           ? (parsed as unknown as ServerMessage)
           : null;
       case "confirm_request":
-        return typeof parsed.confirmationId === "string" &&
-          typeof parsed.mitigationId === "string" &&
-          typeof parsed.actionId === "string" &&
-          typeof parsed.actionSummary === "string" &&
-          typeof parsed.expiresAt === "number"
+        return isId(parsed.confirmationId) &&
+          isId(parsed.mitigationId) &&
+          typeof parsed.actionId === "string" && (ACTION_LIBRARY as readonly string[]).includes(parsed.actionId) &&
+          isBoundedString(parsed.actionSummary, 240) &&
+          isFiniteNumber(parsed.expiresAt)
           ? (parsed as unknown as ServerMessage)
           : null;
       case "tool_result":
-        return typeof parsed.requestId === "string" &&
-          isRecord(parsed.data) &&
-          typeof parsed.data.kind === "string"
+        return isBoundedString(parsed.requestId, 64) && isToolResultData(parsed.data)
           ? (parsed as unknown as ServerMessage)
           : null;
       case "error":
-        return (parsed.requestId === undefined || typeof parsed.requestId === "string") &&
-          typeof parsed.code === "string" &&
-          typeof parsed.message === "string"
+        return (parsed.requestId === undefined || isBoundedString(parsed.requestId, 64)) &&
+          isBoundedString(parsed.code, 80) &&
+          isBoundedString(parsed.message, 500)
           ? (parsed as unknown as ServerMessage)
           : null;
       default:
@@ -661,6 +753,7 @@ export function buildRoomWebSocketUrl(
   baseUrl: string,
   roomId: string = ROOM_ID,
   demo = typeof location !== "undefined" && new URLSearchParams(location.search).get("demo") === "1",
+  commanderToken?: string,
 ): string {
   const url = new URL(baseUrl);
   if (url.protocol === "http:") url.protocol = "ws:";
@@ -669,7 +762,9 @@ export function buildRoomWebSocketUrl(
     throw new TypeError("Room server URL must use http:, https:, ws:, or wss:.");
   }
   url.pathname = `/rooms/${encodeURIComponent(roomId)}/ws`;
-  url.search = demo ? "?demo=1" : "";
+  url.search = "";
+  if (demo) url.searchParams.set("demo", "1");
+  if (commanderToken) url.searchParams.set("commander", commanderToken);
   url.hash = "";
   return url.toString();
 }
@@ -682,6 +777,12 @@ export function defaultRoomWebSocketUrl(): string {
   }
   if (typeof location === "undefined") {
     throw new RoomClientError("missing_room_url", "A room WebSocket URL is required.");
+  }
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) {
+    throw new RoomClientError(
+      "missing_room_url",
+      "Set VITE_ROOM_WS_URL to the deployed room Worker origin.",
+    );
   }
   return buildRoomWebSocketUrl(location.origin);
 }

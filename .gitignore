@@ -8,6 +8,8 @@ blob-report/
 .env
 .env.local
 .env.*.local
+.env.production
+**/.dev.vars
 .DS_Store
 Thumbs.db
 .wt/

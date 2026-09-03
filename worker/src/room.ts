@@ -18,12 +18,14 @@ export interface RoomEnv {
   TARGET_ORIGIN?: string;
   TARGET_TOKEN?: string;
   ALLOWED_ORIGINS?: string;
+  COMMANDER_TOKEN?: string;
 }
 
 interface ConnectionAttachment {
   connectionId: string;
   memberId?: string;
   demo: boolean;
+  canCommand: boolean;
 }
 
 interface PendingConfirmation {
@@ -53,6 +55,12 @@ interface BotState {
   countered: boolean;
 }
 
+interface RequestRecord {
+  fingerprint: string;
+  response?: ServerMessage;
+  updatedAt: number;
+}
+
 interface StoredRoom {
   state: RoomState;
   nextMember: number;
@@ -61,6 +69,7 @@ interface StoredRoom {
   nextConfirmation: number;
   pending: Record<string, PendingConfirmation>;
   approvals: Record<string, Approval>;
+  requestLog: Record<string, Record<string, RequestRecord>>;
   bot: BotState;
 }
 
@@ -68,6 +77,7 @@ interface Session {
   memberId: string | undefined;
   readonly demo: boolean;
   readonly isBot: boolean;
+  readonly canCommand: boolean;
   send(message: ServerMessage): void;
   bindMember(memberId: string): void;
 }
@@ -88,11 +98,32 @@ const APPROVAL_TTL_MS = 60_000;
 const EMPTY_ROOM_TTL_MS = 60 * 60 * 1_000;
 const BOT_JOIN_DELAY_MS = 1_000;
 const BOT_HYPOTHESIS_DELAY_MS = 9_500;
+const MAX_REQUEST_RECORDS_PER_MEMBER = 64;
+const MUTATING_REQUESTS = new Set<ClientMessage["type"]>([
+  "propose_hypothesis",
+  "counter",
+  "propose_mitigation",
+  "vote",
+  "request_confirm",
+  "apply",
+]);
 
 const isActionId = (value: string): value is ActionId =>
   (ACTION_LIBRARY as readonly string[]).includes(value);
 
 const nowSeconds = (): number => Math.floor(Date.now() / 1_000);
+
+const isLoopback = (hostname: string): boolean =>
+  hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+
+const constantTimeEqual = (left: string, right: string): boolean => {
+  const length = Math.max(left.length, right.length);
+  let mismatch = left.length ^ right.length;
+  for (let index = 0; index < length; index += 1) {
+    mismatch |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  }
+  return mismatch === 0;
+};
 
 const emptyRoom = (id: string): StoredRoom => ({
   state: {
@@ -112,6 +143,7 @@ const emptyRoom = (id: string): StoredRoom => ({
   nextConfirmation: 1,
   pending: {},
   approvals: {},
+  requestLog: {},
   bot: {
     enabled: false,
     humanJoinedAt: null,
@@ -141,6 +173,7 @@ export class Room extends DurableObject<RoomEnv> {
     this.room = emptyRoom(ctx.id.name ?? ROOM_ID);
     this.ready = ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<StoredRoom>(STORE_KEY)) ?? this.room;
+      this.room.requestLog ??= {};
       await this.reconcileConnections();
       this.restoreConfirmationTimers();
       this.scheduleBot();
@@ -155,6 +188,11 @@ export class Room extends DurableObject<RoomEnv> {
     }
 
     const url = new URL(request.url);
+    const configuredToken = this.env.COMMANDER_TOKEN?.trim();
+    const presentedToken = url.searchParams.get("commander") ?? "";
+    const canCommand = configuredToken
+      ? constantTimeEqual(presentedToken, configuredToken)
+      : isLoopback(url.hostname);
     const pair = new WebSocketPair();
     const sockets = Object.values(pair);
     const client = sockets[0];
@@ -164,6 +202,7 @@ export class Room extends DurableObject<RoomEnv> {
     server.serializeAttachment({
       connectionId: crypto.randomUUID(),
       demo: url.searchParams.get("demo") === "1",
+      canCommand,
     } satisfies ConnectionAttachment);
     this.ctx.acceptWebSocket(server);
     return new Response(null, { status: 101, webSocket: client });
@@ -179,11 +218,13 @@ export class Room extends DurableObject<RoomEnv> {
     const attachment = (socket.deserializeAttachment() ?? {
       connectionId: crypto.randomUUID(),
       demo: false,
+      canCommand: false,
     }) as ConnectionAttachment;
     const session: Session = {
       memberId: attachment.memberId,
       demo: attachment.demo,
       isBot: false,
+      canCommand: attachment.canCommand === true,
       send: (message) => this.send(socket, message),
       bindMember: (memberId) => {
         attachment.memberId = memberId;
@@ -211,6 +252,7 @@ export class Room extends DurableObject<RoomEnv> {
     if (!member?.agentActive) return;
     member.agentActive = false;
     if (member.role === "commander") this.cancelPendingConfirmations();
+    else this.cancelPendingConfirmationsFor(member.id);
     recomputeMitigations(this.room.state);
     this.addActivity(`${member.name} left the war room.`);
     await this.handlePresenceChange();
@@ -241,6 +283,10 @@ export class Room extends DurableObject<RoomEnv> {
 
     if (message.type === "confirm") {
       await this.confirm(session, message.confirmationId, message.approved);
+      return;
+    }
+
+    if (MUTATING_REQUESTS.has(message.type) && !(await this.beginMutationRequest(session, message))) {
       return;
     }
 
@@ -311,6 +357,10 @@ export class Room extends DurableObject<RoomEnv> {
     }
     if (role === "commander" && this.room.state.members.some((member) => member.agentActive && member.role === "commander")) {
       this.fail(session, "commander_taken", "This room already has an active commander.");
+      return;
+    }
+    if (role === "commander" && !session.canCommand) {
+      this.fail(session, "commander_forbidden", "This connection does not have the commander capability.");
       return;
     }
 
@@ -492,7 +542,7 @@ export class Room extends DurableObject<RoomEnv> {
 
   private async confirm(session: Session, confirmationId: string, approved: boolean): Promise<void> {
     const commander = this.member(session.memberId!);
-    if (commander?.role !== "commander") {
+    if (commander?.role !== "commander" || !session.canCommand) {
       this.fail(session, "forbidden", "Only the active commander can answer confirmation requests.");
       return;
     }
@@ -521,11 +571,14 @@ export class Room extends DurableObject<RoomEnv> {
     }
     this.addActivity(`${commander.name} ${approved ? "approved" : "rejected"} ${pending.actionId}.`);
     await this.persistAndBroadcast(true);
-    this.sendToMember(pending.requesterMemberId, {
+    const response: ServerMessage = {
       type: "tool_result",
       requestId: pending.requestId,
       data: { kind: "confirm", approved },
-    });
+    };
+    this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
+    this.sendToMember(pending.requesterMemberId, response);
+    this.ctx.waitUntil(this.persist());
   }
 
   private async apply(session: Session, rawActionId: string, requestId: string): Promise<void> {
@@ -555,8 +608,9 @@ export class Room extends DurableObject<RoomEnv> {
 
     this.applying.add(rawActionId);
     try {
-      const response = await this.targetPost<{ applied: boolean; status: ServiceStatus }>(`/actions/${encodeURIComponent(rawActionId)}`);
       delete this.room.approvals[rawActionId];
+      await this.persist();
+      const response = await this.targetPost<{ applied: boolean; status: ServiceStatus }>(`/actions/${encodeURIComponent(rawActionId)}`);
       if (!this.room.state.appliedActions.includes(rawActionId)) this.room.state.appliedActions.push(rawActionId);
       this.addActivity(`${this.memberName(session)} applied ${rawActionId} after commander approval.`);
       await this.persistAndBroadcast(true);
@@ -621,6 +675,7 @@ export class Room extends DurableObject<RoomEnv> {
       memberId: this.room.bot.memberId ?? undefined,
       demo: true,
       isBot: true,
+      canCommand: false,
       send: (message) => {
         if (message.type === "joined") {
           session.memberId = message.memberId;
@@ -739,30 +794,43 @@ export class Room extends DurableObject<RoomEnv> {
     this.clearConfirmationTimer(confirmationId);
     delete this.room.pending[confirmationId];
     await this.persist();
-    this.sendToMember(pending.requesterMemberId, {
+    const response: ServerMessage = {
       type: "tool_result",
       requestId: pending.requestId,
       data: { kind: "confirm", approved: false },
-    });
+    };
+    this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
+    this.sendToMember(pending.requesterMemberId, response);
+    this.ctx.waitUntil(this.persist());
   }
 
   private cancelPendingConfirmations(): void {
     for (const pending of Object.values(this.room.pending)) {
       this.clearConfirmationTimer(pending.confirmationId);
-      this.sendToMember(pending.requesterMemberId, {
+      const response: ServerMessage = {
         type: "tool_result",
         requestId: pending.requestId,
         data: { kind: "confirm", approved: false },
-      });
+      };
+      this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
+      this.sendToMember(pending.requesterMemberId, response);
     }
     this.room.pending = {};
+  }
+
+  private cancelPendingConfirmationsFor(memberId: string): void {
+    for (const pending of Object.values(this.room.pending)) {
+      if (pending.requesterMemberId !== memberId) continue;
+      this.clearConfirmationTimer(pending.confirmationId);
+      delete this.room.pending[pending.confirmationId];
+    }
   }
 
   private activeCommanderSockets(): WebSocket[] {
     return this.ctx.getWebSockets().filter((socket) => {
       const attachment = socket.deserializeAttachment() as ConnectionAttachment | null;
       const member = attachment?.memberId ? this.member(attachment.memberId) : undefined;
-      return member?.agentActive === true && member.role === "commander";
+      return attachment?.canCommand === true && member?.agentActive === true && member.role === "commander";
     });
   }
 
@@ -783,6 +851,52 @@ export class Room extends DurableObject<RoomEnv> {
     if (this.room.state.log.length > MAX_ACTIVITY) {
       this.room.state.log.splice(0, this.room.state.log.length - MAX_ACTIVITY);
     }
+  }
+
+  private async beginMutationRequest(
+    session: Session,
+    message: Exclude<ClientMessage, { type: "join" } | { type: "confirm" }>,
+  ): Promise<boolean> {
+    const memberId = session.memberId!;
+    const memberLog = (this.room.requestLog[memberId] ??= {});
+    const fingerprint = JSON.stringify(message);
+    const existing = memberLog[message.requestId];
+    if (existing) {
+      if (existing.fingerprint !== fingerprint) {
+        session.send({
+          type: "error",
+          requestId: message.requestId,
+          code: "request_id_reused",
+          message: "That requestId was already used for a different operation.",
+        });
+      } else if (existing.response) {
+        session.send(existing.response);
+      } else {
+        session.send({
+          type: "error",
+          requestId: message.requestId,
+          code: "request_in_progress",
+          message: "That operation is already in progress.",
+        });
+      }
+      return false;
+    }
+
+    memberLog[message.requestId] = { fingerprint, updatedAt: Date.now() };
+    const requestIds = Object.keys(memberLog);
+    for (const staleId of requestIds.slice(0, Math.max(0, requestIds.length - MAX_REQUEST_RECORDS_PER_MEMBER))) {
+      delete memberLog[staleId];
+    }
+    await this.persist();
+    return true;
+  }
+
+  private cacheRequestResponse(memberId: string | undefined, requestId: string, response: ServerMessage): void {
+    if (!memberId) return;
+    const record = this.room.requestLog[memberId]?.[requestId];
+    if (!record) return;
+    record.response = response;
+    record.updatedAt = Date.now();
   }
 
   private async persist(): Promise<void> {
@@ -828,12 +942,19 @@ export class Room extends DurableObject<RoomEnv> {
   }
 
   private fail(session: Session, code: string, message: string, requestId?: string): void {
-    session.send({ type: "error", ...(requestId ? { requestId } : {}), code, message });
+    const response: ServerMessage = { type: "error", ...(requestId ? { requestId } : {}), code, message };
+    if (requestId) {
+      this.cacheRequestResponse(session.memberId, requestId, response);
+      this.ctx.waitUntil(this.persist());
+    }
+    session.send(response);
   }
 
   private sendToolResult(session: Session, requestId: string, data: ToolResultData): void {
     let message: ServerMessage = { type: "tool_result", requestId, data };
     if (encodeSize(message) <= TOOL_RESULT_BUDGET) {
+      this.cacheRequestResponse(session.memberId, requestId, message);
+      this.ctx.waitUntil(this.persist());
       session.send(message);
       return;
     }
@@ -879,6 +1000,8 @@ export class Room extends DurableObject<RoomEnv> {
       this.fail(session, "result_too_large", "The result could not be represented within the 2 KB limit.", requestId);
       return;
     }
+    this.cacheRequestResponse(session.memberId, requestId, message);
+    this.ctx.waitUntil(this.persist());
     session.send(message);
   }
 

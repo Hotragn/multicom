@@ -13,6 +13,9 @@ const JSON_HEADERS = {
 const json = (value: unknown, status = 200): Response =>
   new Response(JSON.stringify(value), { status, headers: JSON_HEADERS });
 
+const isLoopback = (hostname: string): boolean =>
+  hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+
 export { Room };
 
 export default {
@@ -24,6 +27,13 @@ export default {
 
     const match = /^\/rooms\/([^/]+)\/ws$/.exec(url.pathname);
     if (!match) return json({ error: "not_found" }, 404);
+    const localRequest = isLoopback(url.hostname);
+    if (!env.ALLOWED_ORIGINS && !localRequest) {
+      return json({ error: "server_not_configured", missing: "ALLOWED_ORIGINS" }, 503);
+    }
+    if (!env.COMMANDER_TOKEN && !localRequest) {
+      return json({ error: "server_not_configured", missing: "COMMANDER_TOKEN" }, 503);
+    }
     if (env.ALLOWED_ORIGINS) {
       const allowed = new Set(env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean));
       const origin = request.headers.get("origin");

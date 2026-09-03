@@ -50,7 +50,9 @@ export function snapshotAt(state: PersistedScenario, nowMs: number): ServiceStat
 
   // The curve is derived from persisted time, so every isolate observes the
   // same recovery and no background timer is required in the target Worker.
-  const progress = Math.min(1, Math.max(0, (nowMs - state.appliedAt) / 8_000));
+  // Finish by six seconds so the room's two-second status cadence still has
+  // margin to broadcast and render recovery inside the ten-second acceptance gate.
+  const progress = Math.min(1, Math.max(0, (nowMs - state.appliedAt) / 6_000));
   return {
     errorRate: Number(interpolate(FAULTY_STATUS.errorRate, HEALTHY_STATUS.errorRate, progress).toFixed(4)),
     p99ms: Math.round(interpolate(FAULTY_STATUS.p99ms, HEALTHY_STATUS.p99ms, progress)),

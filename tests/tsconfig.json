@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "@playwright/test"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts", "../shared/**/*.ts", "../worker/src/domain.ts", "../worker/src/protocol.ts", "../target/src/scenario-state.ts"]
+}

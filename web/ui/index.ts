@@ -397,9 +397,13 @@ function createShell(root: HTMLElement): ShellRefs {
   };
 }
 
-function countVotes(votes: Record<string, VoteChoice>): { yes: number; no: number } {
-  return Object.values(votes).reduce(
-    (tally, choice) => {
+function countVotes(room: RoomState, votes: Record<string, VoteChoice>): { yes: number; no: number } {
+  const activeMembers = new Set(
+    room.members.filter((member) => member.agentActive).map((member) => member.id),
+  );
+  return Object.entries(votes).reduce(
+    (tally, [memberId, choice]) => {
+      if (!activeMembers.has(memberId)) return tally;
       tally[choice] += 1;
       return tally;
     },
@@ -417,7 +421,7 @@ function createStateLabel(className: string, label: string): HTMLSpanElement {
 }
 
 function renderHypothesis(room: RoomState, hypothesis: Hypothesis): HTMLLIElement {
-  const tally = countVotes(hypothesis.votes);
+  const tally = countVotes(room, hypothesis.votes);
   const challenged = hypothesis.rebuttals.length > 0 || tally.no > tally.yes;
   const item = element("li", "mc-card-item");
   const card = element("article", "mc-card mc-hypothesis");
@@ -542,7 +546,7 @@ function renderMitigation(
   client: RoomUiClient,
   onVote: (targetId: string, choice: VoteChoice) => void,
 ): HTMLLIElement {
-  const tally = countVotes(mitigation.votes);
+  const tally = countVotes(room, mitigation.votes);
   const state = mitigationState(room, mitigation);
   const hypothesis = room.hypotheses.find((item) => item.id === mitigation.hypothesisId);
   const item = element("li", "mc-card-item");
@@ -714,7 +718,7 @@ function renderStatus(model: UiModel, refs: ShellRefs, now: () => number): void 
     const formattedElapsed = formatElapsed(elapsed);
     setText(refs.timer, formattedElapsed);
     refs.timer.setAttribute("aria-label", `Mean time to resolution ${formattedElapsed}`);
-    const people = room.members.length;
+    const people = room.members.filter((member) => member.agentActive).length;
     setText(refs.memberCount, `${people} ${people === 1 ? "person" : "people"} in room`);
     if (resolved) {
       const resolution = room.appliedActions.includes("scale_pool:default")

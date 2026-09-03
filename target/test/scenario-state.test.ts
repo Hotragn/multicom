@@ -17,8 +17,8 @@ describe("scripted target state", () => {
   it("recovers deterministically within ten seconds", () => {
     const state = armed("scale_pool:default", 10_000);
     expect(snapshotAt(state, 10_000).errorRate).toBe(0.23);
-    expect(snapshotAt(state, 14_000).errorRate).toBeCloseTo(0.12);
-    expect(snapshotAt(state, 18_000)).toMatchObject({ errorRate: 0.01, p99ms: 420, pool: { max: 50 } });
+    expect(snapshotAt(state, 14_000).errorRate).toBeCloseTo(0.0833);
+    expect(snapshotAt(state, 16_000)).toMatchObject({ errorRate: 0.01, p99ms: 420, pool: { max: 50 } });
   });
 
   it("keeps rollback unhealthy and flag disable health-neutral", () => {

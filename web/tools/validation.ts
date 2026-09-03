@@ -10,12 +10,12 @@ import { SERVICE_NAME } from "../../shared/scenario.ts";
 import { ToolInputError } from "./errors.ts";
 
 const LIMITS = {
-  name: 48,
+  name: 40,
   title: 120,
-  evidence: 600,
-  filter: 120,
+  evidence: 400,
+  filter: 100,
   id: 64,
-  blastRadius: 180,
+  blastRadius: 200,
 } as const;
 
 type UnknownRecord = Record<string, unknown>;
@@ -58,8 +58,11 @@ function stringValue(
   if (normalized.length === 0) {
     throw new ToolInputError(`${key} must not be empty.`);
   }
-  if ([...normalized].length > maxLength) {
+  if (candidate.length > maxLength) {
     throw new ToolInputError(`${key} must be at most ${maxLength} characters.`);
+  }
+  if (/\p{C}/u.test(candidate)) {
+    throw new ToolInputError(`${key} cannot contain control characters.`);
   }
   return normalized;
 }
@@ -91,7 +94,7 @@ function enumValue<T extends string>(
 
 function idValue(value: UnknownRecord, key: string): string {
   const id = stringValue(value, key, LIMITS.id);
-  if (!/^[A-Za-z0-9._:-]+$/.test(id)) {
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) {
     throw new ToolInputError(`${key} contains unsupported characters.`);
   }
   return id;

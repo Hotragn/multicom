@@ -68,10 +68,7 @@ test("invalid action input fails safely without opening a socket", async () => {
   const client = unusedClient();
   const apply = createToolDefinitions(client).find((tool) => tool.name === "apply_mitigation");
   assert.ok(apply);
-  const result = await apply.execute(
-    { actionId: "delete:production" },
-    { signal: new AbortController().signal },
-  );
+  const result = await apply.execute({ actionId: "delete:production" });
   assert.deepEqual(result, {
     error: {
       code: "unknown_action",

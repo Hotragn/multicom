@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { FAULTY_STATUS } from "../../../shared/scenario.ts";
 import type { RoomState } from "../../../shared/ws-messages.ts";
-import { RoomClient } from "../room-client.ts";
+import { buildRoomWebSocketUrl, RoomClient } from "../room-client.ts";
 import { FakeSocket } from "./fake-socket.ts";
 
 const EMPTY_STATE: RoomState = {
@@ -141,4 +141,26 @@ test("shares broadcasts with UI subscribers and sends human confirmation", async
     confirmationId: "confirmation-1",
     approved: true,
   });
+});
+
+test("drops malformed nested room state before it reaches UI subscribers", async () => {
+  const { client, socket } = setupClient();
+  await join(client, socket);
+  const seen: string[] = [];
+  client.subscribe((message) => seen.push(message.type));
+  seen.length = 0;
+
+  socket.receive({
+    type: "state",
+    state: { ...EMPTY_STATE, members: "not-an-array" },
+  });
+
+  assert.deepEqual(seen, []);
+});
+
+test("includes commander capability without discarding demo mode", () => {
+  assert.equal(
+    buildRoomWebSocketUrl("https://room.example", "incident-1", true, "secret token"),
+    "wss://room.example/rooms/incident-1/ws?demo=1&commander=secret+token",
+  );
 });

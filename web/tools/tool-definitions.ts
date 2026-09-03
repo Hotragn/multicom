@@ -8,7 +8,7 @@ import {
   type ToolName,
   type ToolParams,
 } from "../../shared/tools.ts";
-import { isAbortError, RoomClientError, ToolInputError } from "./errors.ts";
+import { RoomClientError, ToolInputError } from "./errors.ts";
 import {
   assertWithinToolResultBudget,
   budgetToolResult,
@@ -16,7 +16,7 @@ import {
 } from "./result-budget.ts";
 import type { RoomClient } from "./room-client.ts";
 import { TOOL_INPUT_LIMITS, validateToolInput } from "./validation.ts";
-import type { ModelContextTool, ToolExecuteOptions } from "./webmcp-types.ts";
+import type { ModelContextTool } from "./webmcp-types.ts";
 
 type JsonSchema = Record<string, unknown>;
 
@@ -31,7 +31,7 @@ const ID_SCHEMA = {
   type: "string",
   minLength: 1,
   maxLength: TOOL_INPUT_LIMITS.id,
-  pattern: "^[A-Za-z0-9._:-]+$",
+  pattern: "^[A-Za-z0-9_-]+$",
 } as const;
 
 export const TOOL_INPUT_SCHEMAS: Record<ToolName, JsonSchema> = {
@@ -126,33 +126,31 @@ async function executeTool<K extends ToolName>(
   client: RoomClient,
   toolName: K,
   rawInput: unknown,
-  options?: ToolExecuteOptions,
 ): Promise<unknown> {
   try {
     const input = validateToolInput(toolName, rawInput);
-    const signal = options?.signal;
     let result: unknown;
 
     switch (toolName) {
       case "join_room": {
         const params = input as ToolParams["join_room"];
-        result = await client.join(params.name, params.role, signal);
+        result = await client.join(params.name, params.role);
         break;
       }
       case "get_room_state":
-        result = await client.getRoomState(signal);
+        result = await client.getRoomState();
         break;
       case "get_service_status":
-        result = await client.getServiceStatus(signal);
+        result = await client.getServiceStatus();
         break;
       case "query_logs": {
         const params = input as ToolParams["query_logs"];
-        result = await client.queryLogs(params.service, params.window, params.filter, signal);
+        result = await client.queryLogs(params.service, params.window, params.filter);
         break;
       }
       case "run_check": {
         const params = input as ToolParams["run_check"];
-        result = await client.runCheck(params.checkId, signal);
+        result = await client.runCheck(params.checkId);
         break;
       }
       case "propose_hypothesis": {
@@ -161,13 +159,12 @@ async function executeTool<K extends ToolName>(
           params.title,
           params.evidence,
           params.confidence,
-          signal,
         );
         break;
       }
       case "counter_hypothesis": {
         const params = input as ToolParams["counter_hypothesis"];
-        result = await client.counterHypothesis(params.hypothesisId, params.evidence, signal);
+        result = await client.counterHypothesis(params.hypothesisId, params.evidence);
         break;
       }
       case "propose_mitigation": {
@@ -176,23 +173,22 @@ async function executeTool<K extends ToolName>(
           params.hypothesisId,
           params.actionId,
           params.blastRadius,
-          signal,
         );
         break;
       }
       case "vote": {
         const params = input as ToolParams["vote"];
-        result = await client.vote(params.targetId, params.choice, signal);
+        result = await client.vote(params.targetId, params.choice);
         break;
       }
       case "request_human_confirm": {
         const params = input as ToolParams["request_human_confirm"];
-        result = await client.requestHumanConfirm(params.mitigationId, signal);
+        result = await client.requestHumanConfirm(params.mitigationId);
         break;
       }
       case "apply_mitigation": {
         const params = input as ToolParams["apply_mitigation"];
-        result = await client.applyMitigation(params.actionId, signal);
+        result = await client.applyMitigation(params.actionId);
         break;
       }
       default: {
@@ -208,8 +204,6 @@ async function executeTool<K extends ToolName>(
     let failure;
     if (error instanceof ToolInputError || error instanceof RoomClientError) {
       failure = toolFailure(error.code, error.message);
-    } else if (isAbortError(error)) {
-      failure = toolFailure("cancelled", "The tool call was cancelled.");
     } else {
       failure = toolFailure("tool_failed", "The tool call failed safely. Try again.");
     }
@@ -228,7 +222,7 @@ export function createToolDefinitions(client: RoomClient): ModelContextTool[] {
       description: TOOL_DESCRIPTIONS[name],
       inputSchema: TOOL_INPUT_SCHEMAS[name],
       ...(annotations ? { annotations } : {}),
-      execute: (input, options) => executeTool(client, name, input, options),
+      execute: (input) => executeTool(client, name, input),
     };
   });
 }
