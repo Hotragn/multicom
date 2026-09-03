@@ -1,0 +1,14 @@
+node_modules/
+.npm-cache/
+dist/
+.wrangler/
+test-results/
+playwright-report/
+blob-report/
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+.wt/
+.gstack/

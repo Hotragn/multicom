@@ -1,0 +1,22 @@
+{
+  "name": "@multicom/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mcp-b/webmcp-polyfill": "5.1.0",
+    "@phosphor-icons/web": "2.1.2"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  }
+}

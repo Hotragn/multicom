@@ -1,0 +1,28 @@
+{
+  "name": "multicom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "web",
+    "web/tools",
+    "worker",
+    "target"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n target,room,web -c yellow,cyan,green \"npm run dev --workspace=@multicom/target\" \"npm run dev --workspace=@multicom/worker\" \"npm run dev --workspace=@multicom/web\"",
+    "build": "npm run build --workspace=@multicom/web && npm run deploy:dry --workspace=@multicom/target && npm run deploy:dry --workspace=@multicom/worker",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:unit": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "test": "npm run typecheck && npm run test:unit && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "concurrently": "10.0.5",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
