@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-09-03T11:19:06.559Z",
+  "checkedAt": "2026-09-03T23:23:35.040Z",
   "target": "https://multicom-web.pages.dev/?demo=1",
   "profile": "C:/Users/hotra/AppData/Local/Temp/mc-webmcp-prod",
   "flag": "enable-webmcp-testing",
@@ -15,7 +15,7 @@
   },
   "nativeWebMcp": true,
   "deployedPage": {
-    "count": 12,
+    "count": 13,
     "longestDescription": 104,
     "names": [
       "apply_mitigation",
@@ -28,21 +28,22 @@
       "propose_mitigation",
       "query_logs",
       "request_human_confirm",
+      "revise_hypothesis",
       "run_check",
       "vote"
     ],
     "viaPolyfill": false,
     "fieldsDelivered": {
-      "withInputSchema": 12,
+      "withInputSchema": 13,
       "inputSchemaType": "string",
       "withOutputSchema": 0,
       "withAnnotations": 5,
-      "documentedParameters": 20
+      "documentedParameters": 23
     },
     "joinRoomRole": "Which seat to take. A room has at most one commander. commander is the seat whose browser is shown the human approval dialog. Holding it does NOT let you approve anything: an approval is only ever created by a person clicking Approve in that browser, and no tool on this surface can do it for them — request_human_confirm asks and then waits. So if you are the only participant, take commander, so that the human at your browser is the one who can approve. If someone is already seated as commander, take responder. A room with no commander cannot be completed: request_human_confirm fails with commander_unavailable."
   },
   "controlDeployedPage": {
-    "count": 12,
+    "count": 13,
     "viaPolyfill": true
   },
   "conclusion": "native WebMCP confirmed: with the flag on the page registers into the browser API; with it off the same page falls back to the polyfill"

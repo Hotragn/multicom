@@ -109,7 +109,7 @@ a `.commander-token` on disk must not silently change what is being tested.
 
 ### Verified against production, 2026-09-03 (afternoon)
 
-Room Worker `29f046b8`, target `f70f44ab`, Pages serving `index-SQf37RBN.js`.
+Room Worker `c6686ced`, target `f70f44ab`, Pages serving `index-DKQrjK_5.js`.
 This is the multi-judge build plus spectator health, seat-derived agent copy, the
 lobby session guide and the room invite strip. Everything below ran against
 `https://multicom-web.pages.dev` and the deployed Workers, with no secret
@@ -185,7 +185,7 @@ npm run webmcp:chrome
 ```
 
 It runs an A/B, because "not the polyfill" only means something next to a
-control: with `enable-webmcp-testing` on, the page registers 12 tools into the
+control: with `enable-webmcp-testing` on, the page registers 13 tools into the
 browser's own surface; with a clean profile and the flag off, the same page
 falls back to the MCP-B polyfill.
 
@@ -194,8 +194,8 @@ Two reports, because they attest to different builds. Each records its own
 
 | File | Build | Result |
 | --- | --- | --- |
-| `docs/webmcp-chrome-report.json` | **deployed**, 2026-09-03 | 12 tools native; 20 of 20 documented parameters delivered; longest description 104 chars; polyfill fallback confirmed with the flag off |
-| `docs/webmcp-chrome-report.deployed.json` | the deployed build *before* this rework | 12 tools native |
+| `docs/webmcp-chrome-report.json` | **deployed**, 2026-09-03 | 13 tools native; 23 of 23 documented parameters delivered; longest description 104 chars; polyfill fallback confirmed with the flag off |
+| `docs/webmcp-chrome-report.deployed.json` | the deployed build *before* the multi-judge rework | 12 tools native |
 
 The report also records which optional fields a native client actually gets,
 because two of them decide where documentation can live. `inputSchema` arrives

@@ -111,9 +111,10 @@ commander models, [TESTING.md](docs/TESTING.md) for the coverage map,
 the incident unaided.
 
 **Status:** deployed 2026-09-03 and verified against the live Workers. The link
-above serves this build: room `29f046b8`, target `f70f44ab`, Pages
-`index-SQf37RBN.js`. Smoke 9/9, live acceptance 32/32, re-run against this exact
-bundle. A bystander room stayed at 23% while the worked room recovered to 1%.
+above serves this build: room `c6686ced`, target `f70f44ab`, Pages
+`index-DKQrjK_5.js`. Smoke 9/9, live acceptance 32/32 and the multi-agent drill
+all green against this exact bundle, with 13 tools registering natively in
+Chrome. A bystander room stayed at 23% while the worked room recovered to 1%.
 See [TESTING.md](docs/TESTING.md).
 
 ## License

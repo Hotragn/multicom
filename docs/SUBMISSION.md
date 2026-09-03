@@ -144,10 +144,10 @@ Two limitations from the earlier build are now fixed rather than documented. The
       browsers, and proof a bystander room is untouched
 - [x] Several judges at once: rooms are isolated per tenant, and three run concurrently in the suite
 - [x] A judge with no WebMCP browser can still run the whole loop, by hand or via the scripted drill
-- [x] The multi-judge rework deployed to production (room `29f046b8`, target `f70f44ab`, smoke 9/9, live acceptance 32/32)
+- [x] Deployed to production (room `c6686ced`, target `f70f44ab`, Pages `index-DKQrjK_5.js`): smoke 9/9, live acceptance 32/32, multi-agent drill all green, 13 tools native in Chrome
 - [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
 - [x] Interface screenshots captured and indexed, regenerated against the shipped interface
 - [x] Final Devpost field copy written (307 words across four fields, each well under the 300-word per-field limit), covering the per-judge isolation and the lobby
-- [x] Real WebMCP client verified: 12 tools register natively in Chrome 152 behind `enable-webmcp-testing`, with a polyfill-fallback control
+- [x] Real WebMCP client verified: 13 tools register natively in Chrome 152 behind `enable-webmcp-testing`, with a polyfill-fallback control
 - [ ] Public YouTube demo with audio — storyboard rewritten for the judge path in [DEMO.md](DEMO.md); needs recording
 - [ ] Devpost project page filled in and verified from a logged-out browser

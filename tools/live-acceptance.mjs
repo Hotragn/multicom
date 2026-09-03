@@ -84,9 +84,11 @@ const newContextPage = async () => {
 };
 
 const waitForTools = (page) =>
-  page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS, null, {
-    timeout: 30_000,
-  });
+  page.waitForFunction(
+    (expected) => Object.keys(window.__tools ?? {}).length === expected,
+    EXPECTED_TOOLS,
+    { timeout: 30_000 },
+  );
 
 /** Provision a room through the lobby, the way a judge does. */
 async function mintRoomThroughLobby() {

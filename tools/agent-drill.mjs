@@ -93,8 +93,8 @@ async function newAgentPage(search) {
 
 async function waitForTools(page) {
   await page.waitForFunction(
-    () => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS,
-    null,
+    (expected) => Object.keys(window.__tools ?? {}).length === expected,
+    EXPECTED_TOOLS,
     { timeout: 30_000 },
   );
 }

@@ -43,7 +43,11 @@ await page.addInitScript(() => {
 const query = new URLSearchParams({ room });
 if (commander) query.set("commander", commander);
 await page.goto(`${appOrigin}/?${query.toString()}`);
-await page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === EXPECTED_TOOLS, null, { timeout: 20_000 });
+await page.waitForFunction(
+  (expected) => Object.keys(window.__tools ?? {}).length === expected,
+  EXPECTED_TOOLS,
+  { timeout: 20_000 },
+);
 
 if (autoJoin) {
   const [name, role = "responder"] = autoJoin.split(":");

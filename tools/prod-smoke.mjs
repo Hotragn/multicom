@@ -36,10 +36,14 @@ await page.addInitScript(() => {
 
 await page.goto(`${APP}/?demo=1`, { waitUntil: "domcontentloaded" });
 const toolCount = await page
-  .waitForFunction(() => {
-    const n = Object.keys(window.__tools ?? {}).length;
-    return n === EXPECTED_TOOLS ? n : null;
-  }, null, { timeout: 30_000 })
+  .waitForFunction(
+    (expected) => {
+      const n = Object.keys(window.__tools ?? {}).length;
+      return n === expected ? n : null;
+    },
+    EXPECTED_TOOLS,
+    { timeout: 30_000 },
+  )
   .then((h) => h.jsonValue())
   .catch(() => 0);
 check(toolCount === EXPECTED_TOOLS, `${EXPECTED_TOOLS} tools register on the deployed page`, String(toolCount));
