@@ -16,6 +16,11 @@ import { fileURLToPath } from "node:url";
 // and shell:true with arguments is itself deprecated.
 const wrangler = fileURLToPath(new URL("../node_modules/wrangler/bin/wrangler.js", import.meta.url));
 
+// Resolve the Worker directories from this file, not from the shell's current
+// directory, so the script behaves the same whether it runs from the repo root
+// or from inside worker/.
+const workerPath = (name) => fileURLToPath(new URL(`../${name}/`, import.meta.url));
+
 function putSecret(cwd, name, value) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [wrangler, "secret", "put", name], {
@@ -34,9 +39,9 @@ function putSecret(cwd, name, value) {
 
 const token = randomBytes(32).toString("hex");
 
-for (const workerDir of ["target", "worker"]) {
-  process.stdout.write(`setting TARGET_TOKEN in ${workerDir}/ ...\n`);
-  await putSecret(workerDir, "TARGET_TOKEN", token);
+for (const name of ["target", "worker"]) {
+  process.stdout.write(`setting TARGET_TOKEN in ${name}/ ...\n`);
+  await putSecret(workerPath(name), "TARGET_TOKEN", token);
 }
 
 process.stdout.write("\nTARGET_TOKEN set on both Workers. The value was never printed.\n");
