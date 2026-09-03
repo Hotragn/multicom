@@ -80,13 +80,25 @@ is verified in production: reconnecting to a spent demo room drove the room's
 re-arm call, the incident timer reset from 82:16 to 0:24, and `wrangler tail`
 recorded no authorization failure.
 
-Still unverified in production: `apply_mitigation` end to end, because it needs
-a commander approval and the deployed commander capability is deliberately
-private. Run it with the commander link:
+Thirteen of the fourteen checks pass against the deployed build. Run them
+yourself from the repo root:
 
 ```bash
-node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev --commander "<commander token>"
+node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev
 ```
+
+Still unverified in production: the approval and apply pair, because it needs a
+commander approval and the deployed commander capability is deliberately
+private. Without one the run reports `SKIP` and exits clean. Supply it through
+the environment so the capability stays off your command line:
+
+```bash
+COMMANDER_TOKEN=... node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev
+```
+
+The scripts under `tools/` resolve repo paths from their own location, so they
+work from any directory, but `node` still has to be pointed at the file itself:
+from `worker/` that is `node ../tools/live-acceptance.mjs`.
 
 ## Against a real WebMCP browser
 

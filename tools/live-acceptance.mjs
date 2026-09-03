@@ -5,7 +5,11 @@
 // Worker, the Durable Object, and the target Worker are the real ones. The
 // commander approval is a real click on the real dialog.
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+
+// Resolve repo paths from this file, so the script works from any directory.
+const repo = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
 
 const arg = (flag, fallback) => {
   const at = process.argv.indexOf(flag);
@@ -13,14 +17,22 @@ const arg = (flag, fallback) => {
 };
 
 const appOrigin = arg("--app", "http://127.0.0.1:5173");
-const commanderToken = arg("--commander", "");
+const commanderToken = arg("--commander", process.env.COMMANDER_TOKEN ?? "");
 const room = arg("--room", `live-${Date.now().toString(36)}`);
 
 let failures = 0;
+let skipped = 0;
 const check = (label, pass, detail = "") => {
   console.log(`${pass ? "PASS" : "FAIL"}  ${label}${detail ? `  ${detail}` : ""}`);
   if (!pass) failures += 1;
 };
+const skip = (label, why) => {
+  console.log(`SKIP  ${label}  ${why}`);
+  skipped += 1;
+};
+// A deployed room keeps its commander capability private on purpose, so the
+// approval half of the run is opt-in rather than a failure when it is absent.
+const canCommand = Boolean(commanderToken);
 
 const browser = await chromium.launch({ headless: true });
 
@@ -57,7 +69,7 @@ const targetOrigin = arg("--target", "http://127.0.0.1:8788");
 async function rearmTarget() {
   const status = await fetch(`${targetOrigin}/status`).then((r) => r.json());
   if (status.errorRate >= 0.02) return "already armed";
-  const raw = await readFile("target/.dev.vars", "utf8").catch(() => "");
+  const raw = await readFile(repo("target/.dev.vars"), "utf8").catch(() => "");
   const marker = "ADMIN_KEY=";
   const at = raw.indexOf(marker);
   const key = at === -1
@@ -86,7 +98,7 @@ check(
 );
 
 const joins = await Promise.all([
-  call(commander, "join_room", { name: "Priya", role: "commander" }),
+  call(commander, "join_room", { name: "Priya", role: canCommand ? "commander" : "responder" }),
   call(alice, "join_room", { name: "Arjun", role: "responder" }),
   call(bob, "join_room", { name: "Mei", role: "responder" }),
 ]);
@@ -146,12 +158,30 @@ check("rationale reaches the other browser", shown.includes("stated reason"));
 const unapproved = await call(alice, "apply_mitigation", { actionId: "scale_pool:default" });
 check("apply refused with no human approval", unapproved?.error?.code === "needs_human_confirm", unapproved?.error?.code);
 
+if (!canCommand) {
+  skip("commander approval and apply", "no commander capability supplied; pass --commander or set COMMANDER_TOKEN");
+  await browser.close();
+  console.log(`
+${failures === 0 ? `PRE-GATE CHECKS PASSED (${skipped} skipped)` : `${failures} CHECK(S) FAILED`}`);
+  process.exit(failures === 0 ? 0 : 1);
+}
+
 // A real click on the real dialog.
 const pending = alice.evaluate(
   ({ id }) => window.__tools.request_human_confirm.execute({ mitigationId: id }, { signal: new AbortController().signal }),
   { id: mitigation.mitigationId },
 );
-await commander.waitForSelector('[data-testid="confirm-dialog"]:not([hidden])', { timeout: 10_000 });
+const dialogAppeared = await commander
+  .waitForSelector('[data-testid="confirm-dialog"]:not([hidden])', { timeout: 10_000 })
+  .then(() => true)
+  .catch(() => false);
+check("confirmation dialog reaches the commander", dialogAppeared);
+if (!dialogAppeared) {
+  await browser.close();
+  console.log(`
+${failures} CHECK(S) FAILED`);
+  process.exit(1);
+}
 const dialogText = await commander.evaluate(() => document.querySelector('[data-testid="confirm-dialog"]').innerText);
 check("dialog names the server-derived action", dialogText.includes("scale_pool:default"));
 await commander.click('[data-testid="approve-mitigation"]');

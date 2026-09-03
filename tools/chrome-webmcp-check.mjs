@@ -9,7 +9,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+
+// Resolve repo paths from this file, so the script works from any directory.
+const repo = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
 
 const arg = (flag, fallback) => {
   const at = process.argv.indexOf(flag);
@@ -92,8 +96,8 @@ report.deployedPage = await page.evaluate(async () => {
 });
 console.log(`deployed page: ${JSON.stringify(report.deployedPage, null, 2)}`);
 
-await mkdir("docs/screenshots", { recursive: true });
-await page.screenshot({ path: "docs/screenshots/11-real-chrome.png" });
+await mkdir(repo("docs/screenshots"), { recursive: true });
+await page.screenshot({ path: repo("docs/screenshots/11-real-chrome.png") });
 await context.close();
 
 
@@ -124,5 +128,5 @@ report.conclusion =
     : "inconclusive - compare secureOrigin, deployedPage and controlDeployedPage";
 console.log(report.conclusion);
 
-await writeFile("docs/webmcp-chrome-report.json", `${JSON.stringify(report, null, 2)}\n`);
+await writeFile(repo("docs/webmcp-chrome-report.json"), `${JSON.stringify(report, null, 2)}\n`);
 console.log("\nreport: docs/webmcp-chrome-report.json");
