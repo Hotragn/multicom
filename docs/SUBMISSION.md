@@ -118,6 +118,8 @@ This challenge build ships one scripted incident, capability-link commander acce
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
 - [x] Hosted frontend URL
 - [x] Live browser acceptance pass (room connection live; 11 WebMCP tools visible)
+- [x] Live cold-open pass (demo link shows the incident with no agent attached)
+- [ ] `TARGET_TOKEN` set on the room Worker, so `apply_mitigation` works live
 - [x] Interface screenshots captured and indexed
 - [x] Final Devpost field copy written (252 words, under the 300-word limit)
 - [ ] WebMCP tool-list screenshot from ChatGPT desktop

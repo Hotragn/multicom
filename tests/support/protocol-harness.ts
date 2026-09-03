@@ -106,7 +106,9 @@ class HarnessRoom {
       // Mirror the room Worker: a resolved demo room restarts for the next
       // visitor, unless somebody else is still watching it.
       const watchers = [...this.peers].filter((item) => !item.isBot).length;
-      if (this.state.phase === "resolved" && watchers <= 1) this.restartIncident();
+      const openedFor = Date.now() - this.state.incidentStartedAt * 1_000;
+      const spent = this.state.phase === "resolved" || openedFor > 30 * 60 * 1_000;
+      if (spent && watchers <= 1) this.restartIncident();
       this.ensureStatusTimer();
       this.armBot();
     }

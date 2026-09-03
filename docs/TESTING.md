@@ -63,10 +63,18 @@ the actual deployed Workers:
 The current public build is hosted at <https://multicom-web.pages.dev/?demo=1>. The
 room Worker is <https://multicom-room.multicom-target.workers.dev> and the
 scripted target is <https://multicom-storefront-api.multicom-target.workers.dev>.
-On September 3, 2026, both health endpoints returned 200, a production `wss://`
-client joined a room, and the client browser reported `Room connection: Live`.
-The public demo uses `?demo=1`; the commander capability is kept private for
-the human approval step.
+
+Verified against the deployed Workers on September 3, 2026:
+
+- Both health endpoints return 200.
+- A production `wss://` client joins and the browser reports `Room connection: Live`.
+- `navigator.modelContext.getTools()` returns exactly 11 tools, longest description 74 characters.
+- Opening `?demo=1` with no agent shows live metrics, the house responder, and the watching notice.
+- A stale demo room restarts on arrival: MTTR returned to 0:18 from 98:49.
+
+Not yet verified live, and currently blocked: `apply_mitigation`. The room Worker
+has no `TARGET_TOKEN`, so the target answers its action calls with 403. Set that
+secret on the room Worker before running the checklist below.
 
 ## Screenshot capture
 

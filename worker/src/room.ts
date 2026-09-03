@@ -96,6 +96,9 @@ const MAX_ACTIVITY = 60;
 const TOOL_RESULT_BUDGET = 2_048;
 const APPROVAL_TTL_MS = 60_000;
 const EMPTY_ROOM_TTL_MS = 60 * 60 * 1_000;
+// A demo room that nobody finished still goes stale: its MTTR keeps climbing,
+// so a visitor days later would meet an incident that has been open for days.
+const DEMO_STALE_MS = 30 * 60 * 1_000;
 const BOT_JOIN_DELAY_MS = 1_000;
 const BOT_HYPOTHESIS_DELAY_MS = 9_500;
 const MAX_REQUEST_RECORDS_PER_MEMBER = 64;
@@ -675,9 +678,9 @@ export class Room extends DurableObject<RoomEnv> {
   // house bot and the status feed for that connection so the room shows the live
   // incident instead of an empty board while it waits for someone to join.
   private async beginDemoSpectating(): Promise<void> {
-    if (this.room.state.phase === "resolved") {
-      // A resolved demo room is useless to whoever opens the link next, but
-      // never pull the room out from under someone who is still in it.
+    if (this.isSpentDemoRoom()) {
+      // A spent demo room is useless to whoever opens the link next, but never
+      // pull the room out from under someone who is still in it.
       if (this.ctx.getWebSockets().length > 1) return;
       if (!(await this.restartIncident())) return;
     }
@@ -691,16 +694,31 @@ export class Room extends DurableObject<RoomEnv> {
     await this.broadcastStatus();
   }
 
+  private isSpentDemoRoom(): boolean {
+    if (this.room.state.phase === "resolved") return true;
+    const openedFor = Date.now() - this.room.state.incidentStartedAt * 1_000;
+    return openedFor > DEMO_STALE_MS;
+  }
+
   // Re-arm the scripted fault and clear the board so the next visitor gets a
   // live incident. Only ever called for a demo room with nobody else watching.
   private async restartIncident(): Promise<boolean> {
+    let armedAgain = false;
     try {
       await this.targetPost<{ armed: boolean }>("/scenario/rearm");
+      armedAgain = true;
     } catch (error) {
-      // Leave the resolved room alone rather than show a fresh incident over a
-      // service that is still healthy.
       console.error("Could not re-arm the scripted fault", error);
-      return false;
+    }
+    if (!armedAgain) {
+      // Clearing the board is still right when the service is broken on its
+      // own, but never present a fresh incident over a healthy service.
+      try {
+        const status = await this.targetGet<ServiceStatus>("/status");
+        if (status.errorRate < 0.02) return false;
+      } catch {
+        return false;
+      }
     }
     this.clearTimers();
     await this.ctx.storage.deleteAll();

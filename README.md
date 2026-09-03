@@ -153,11 +153,40 @@ Deployment is deliberately fail-closed. Do not publish until the live acceptance
 4. Build `web/` with `VITE_ROOM_WS_URL` set to the deployed room Worker origin.
 5. Host `web/dist/`, open responder and commander links, then run the live checklist in [docs/TESTING.md](docs/TESTING.md).
 
-Verified deployment (September 3, 2026):
+The exact commands for the current deployment:
+
+```bash
+cd target && npx wrangler deploy
+```
+
+```bash
+cd worker && npm run deploy:production
+```
+
+```bash
+npm run build --workspace=@multicom/web && npx wrangler pages deploy web/dist --project-name multicom-web --branch main
+```
+
+`worker`'s `deploy:production` script carries `TARGET_ORIGIN` and `ALLOWED_ORIGINS`,
+because a plain `wrangler deploy` would drop the vars the live Worker needs.
+
+### Live status (September 3, 2026)
 
 - Public demo: <https://multicom-web.pages.dev/?demo=1>
 - Room Worker health: <https://multicom-room.multicom-target.workers.dev/health>
 - Target Worker health: <https://multicom-storefront-api.multicom-target.workers.dev/health>
+
+Verified against the deployed Workers: both health endpoints return 200, the
+production client reports a live room, all 11 tools register, and opening the
+demo link with no agent shows the live incident with the house responder.
+
+**One step is outstanding.** The room Worker has no `TARGET_TOKEN`, so the target
+rejects its action calls with 403 and `apply_mitigation` fails live. Set it to the
+same value the target Worker holds, then re-run the live checklist:
+
+```bash
+cd worker && npx wrangler secret put TARGET_TOKEN
+```
 
 The commander capability is intentionally not published. Use the private commander link from the deployment session for the human approval step.
 

@@ -7,7 +7,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "dev": "wrangler dev",
-    "deploy:dry": "wrangler deploy --dry-run"
+    "deploy:dry": "wrangler deploy --dry-run",
+    "deploy:production": "wrangler deploy --var TARGET_ORIGIN:https://multicom-storefront-api.multicom-target.workers.dev --var ALLOWED_ORIGINS:https://multicom-web.pages.dev"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260902.1",
