@@ -182,7 +182,22 @@ test("enforces passage, approval binding, expiry, and single-use replay protecti
     await beginConfirmation(responder, mitigationId);
     await expect(commander.getByTestId("confirm-dialog")).toBeVisible();
     await commander.getByTestId("approve-mitigation").click();
-    expect(await finishPending<ToolData>(responder)).toMatchObject({ kind: "confirm", approved: true });
+    expect(await finishPending<ToolData>(responder)).toMatchObject({ kind: "confirm", approved: true, reason: "granted" });
+
+    // A commander who says no reads differently from one who never answered.
+    const second = await mitigation(responder, hypothesisId, "disable_flag:new-checkout");
+    await callTool(commander, "vote", { targetId: second, choice: "yes" });
+    await callTool(responder, "vote", { targetId: second, choice: "yes" });
+    await beginConfirmation(responder, second);
+    await expect(commander.getByTestId("confirm-dialog")).toBeVisible();
+    await commander.getByTestId("reject-mitigation").click();
+    expect(await finishPending<ToolData>(responder)).toMatchObject({
+      kind: "confirm",
+      approved: false,
+      reason: "rejected",
+    });
+    const afterReject = await callTool<ToolFailure>(responder, "apply_mitigation", { actionId: "disable_flag:new-checkout" });
+    expect(afterReject.error.code).toBe("needs_human_confirm");
 
     const applied = await callTool<ToolData>(responder, "apply_mitigation", { actionId: "rollback:deploy-1f3a" });
     expect(applied).toMatchObject({ kind: "apply", applied: true });
@@ -206,7 +221,7 @@ test("enforces passage, approval binding, expiry, and single-use replay protecti
     const mitigationId = await mitigation(page, hypothesisId, "disable_flag:new-checkout");
     await callTool(page, "vote", { targetId: mitigationId, choice: "yes" });
     await beginConfirmation(page, mitigationId);
-    expect(await finishPending<ToolData>(page)).toMatchObject({ kind: "confirm", approved: false });
+    expect(await finishPending<ToolData>(page)).toMatchObject({ kind: "confirm", approved: false, reason: "expired" });
     const expiredApply = await callTool<ToolFailure>(page, "apply_mitigation", { actionId: "disable_flag:new-checkout" });
     expect(expiredApply.error.code).toBe("needs_human_confirm");
     const productionRoom = await readFile(resolve("worker/src/room.ts"), "utf8");

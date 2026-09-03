@@ -56,6 +56,7 @@ the actual deployed Workers:
 - [ ] `scale_pool:default` resolves every connected tab within 10 seconds.
 - [ ] Reusing the consumed approval fails.
 - [ ] Reopening the demo link after a completed run shows a live incident again.
+- [ ] A rejected approval reports `reason: "rejected"`, a lapsed one `reason: "expired"`.
 - [ ] The room remains usable after one browser reconnects.
 
 ## Verified live deployment
@@ -75,6 +76,23 @@ Verified against the deployed Workers on September 3, 2026:
 Not yet verified live, and currently blocked: `apply_mitigation`. The room Worker
 has no `TARGET_TOKEN`, so the target answers its action calls with 403. Set that
 secret on the room Worker before running the checklist below.
+
+## Against the real Workers
+
+`npm test` drives a deterministic in-process harness. To exercise the actual room
+Worker, Durable Object, and target Worker, start the stack and run the scripted
+end-to-end pass:
+
+```bash
+node tools/live-acceptance.mjs --commander "$COMMANDER_TOKEN"
+```
+
+Fifteen checks, ending in a real click on the real approval dialog, an apply
+against the real target, and recovery in all three connected browsers. It re-arms
+the fault first so it is repeatable. Use `--app` and `--target` for a deployed
+build.
+
+For putting real agents in the room instead, see [AGENT-DRILL.md](AGENT-DRILL.md).
 
 ## Screenshot capture
 

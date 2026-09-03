@@ -19,7 +19,8 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Read-only spectating, so opening the link with no agent still shows the live incident
 - A self-resetting incident, so a completed run never leaves the demo spent
 - Literal rendering of all untrusted text; no HTML injection sinks
-- 37 automated checks, including nine two-context Chromium journeys
+- 37 automated checks, including nine two-context Chromium journeys, plus a
+  fifteen-check pass against the real Workers
 
 ## What it looks like
 
@@ -193,6 +194,7 @@ The commander capability is intentionally not published. Use the private command
 ## Project map
 
 ```text
+tools/      agent session bridge and the real-Worker acceptance pass
 shared/     frozen messages, tool names, and scenario
 worker/     room Worker, Durable Object, voting, approval, house bot
 target/     scripted storefront service and fault state
@@ -202,7 +204,7 @@ tests/      Chromium acceptance suite and deterministic protocol harness
 docs/       testing, security, visual system, demo, and Devpost draft
 ```
 
-The implementation contract is [SPEC.md](SPEC.md). The visual system is documented in [docs/VISUAL-SYSTEM.md](docs/VISUAL-SYSTEM.md).
+The implementation contract is [SPEC.md](SPEC.md). The visual system is documented in [docs/VISUAL-SYSTEM.md](docs/VISUAL-SYSTEM.md). Two real agents were put in the room with no hints; what they found is in [docs/AGENT-DRILL.md](docs/AGENT-DRILL.md).
 
 ## License
 

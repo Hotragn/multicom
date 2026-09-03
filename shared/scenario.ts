@@ -49,10 +49,15 @@ export const CHECK_RESULTS: Record<CheckResult["checkId"], CheckResult> = {
   deploy_diff: { checkId: "deploy_diff", deploy: BAD_DEPLOY, changes: ["DB_POOL_MAX: 50 -> 1"] },
   error_timeline: {
     checkId: "error_timeline",
+    // Same clock as SYNTHETIC_LOGS below: healthy at 13:58:00Z, broken from
+    // 13:59:30Z (just after the first pool.acquire timeout), still broken at
+    // 14:06:00Z. Two agents working the drill each tripped over an earlier
+    // version of these points that sat twenty minutes after the log window,
+    // which made cross-tool correlation guesswork.
     points: [
-      { t: 1_788_358_682, errorRate: 0.01 },
-      { t: 1_788_358_897, errorRate: 0.23 },
-      { t: 1_788_359_100, errorRate: 0.23 },
+      { t: 1_788_357_480, errorRate: 0.01 },
+      { t: 1_788_357_570, errorRate: 0.23 },
+      { t: 1_788_357_960, errorRate: 0.23 },
     ],
   },
 };

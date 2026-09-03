@@ -119,7 +119,9 @@ This challenge build ships one scripted incident, capability-link commander acce
 - [x] Hosted frontend URL
 - [x] Live browser acceptance pass (room connection live; 11 WebMCP tools visible)
 - [x] Live cold-open pass (demo link shows the incident with no agent attached)
-- [ ] `TARGET_TOKEN` set on the room Worker, so `apply_mitigation` works live
+- [x] `apply_mitigation` verified end to end against real Workers (local `wrangler dev`)
+- [x] Real-agent drill: both agents diagnosed unaided and refused the injected instruction
+- [ ] `TARGET_TOKEN` set on the deployed room Worker, so `apply_mitigation` works in production
 - [x] Interface screenshots captured and indexed
 - [x] Final Devpost field copy written (252 words, under the 300-word limit)
 - [ ] WebMCP tool-list screenshot from ChatGPT desktop

@@ -349,7 +349,7 @@ class HarnessRoom {
     clearTimeout(pending.timer);
     this.pending.delete(id);
     if (approved) this.approvals.set(pending.actionId, { mitigationId: pending.mitigationId, actionId: pending.actionId, expiresAt: Date.now() + this.approvalTtlMs });
-    this.result(pending.requester, pending.requestId, { kind: "confirm", approved });
+    this.result(pending.requester, pending.requestId, { kind: "confirm", approved, reason: approved ? "granted" : "rejected" });
   }
 
   private expire(id: string): void {
@@ -357,7 +357,7 @@ class HarnessRoom {
     if (!pending) return;
     clearTimeout(pending.timer);
     this.pending.delete(id);
-    this.result(pending.requester, pending.requestId, { kind: "confirm", approved: false });
+    this.result(pending.requester, pending.requestId, { kind: "confirm", approved: false, reason: "expired" });
   }
 
   private apply(peer: Peer, requestId: string, rawActionId: string): void {

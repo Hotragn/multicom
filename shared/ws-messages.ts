@@ -1,5 +1,10 @@
 import type { ActionId, CheckId, LogWindow, RoomRole, VoteChoice } from "./tools";
 
+// A bare approved:false cannot tell "the commander said no" from "nobody
+// answered in time", so an agent may abandon a correct fix. Both drill agents
+// hit this.
+export type ConfirmOutcome = "granted" | "rejected" | "expired";
+
 export type RoomPhase = "triage" | "diagnosing" | "mitigating" | "resolved";
 
 export interface Member {
@@ -87,7 +92,7 @@ export type ToolResultData =
   | { kind: "counter"; hypothesisId: string }
   | { kind: "mitigation"; mitigationId: string }
   | { kind: "vote"; yes: number; no: number; passed: boolean }
-  | { kind: "confirm"; approved: boolean }
+  | { kind: "confirm"; approved: boolean; reason: ConfirmOutcome }
   | { kind: "apply"; applied: boolean; status: ServiceStatus };
 
 export type ServerMessage =

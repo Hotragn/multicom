@@ -31,6 +31,14 @@ Do not mark work complete by description. Mark it complete by gate.
 1. `shared/` is frozen. It contains the WebSocket message types, the tool
    definitions, and the incident scenario. If you believe a contract must
    change, stop and flag it — do not edit.
+
+   Amended once, with human review, on 2026-09-03, after a drill in which two
+   real agents worked the incident from the tool surface alone (see
+   `docs/AGENT-DRILL.md`). Three things the drill exposed: `error_timeline` sat
+   on a different clock from the logs, `run_check` announced that the incident
+   was scripted, and a bare `approved: false` could not distinguish a
+   commander's refusal from nobody answering. The freeze still stands for
+   everything else.
 2. Stay in your lane. Each task owns specific directories (see Repo map).
    Never edit another module's directory.
 3. WebMCP imperative API only. Feature-detect `navigator.modelContext` and

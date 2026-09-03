@@ -82,6 +82,16 @@ interface Session {
   bindMember(memberId: string): void;
 }
 
+// A target that answers 403 is a misconfigured room, not an unreachable
+// service. Reporting both as "did not respond" sends an operator hunting for a
+// network problem: it cost real debugging time on the first deployment, where
+// the room Worker simply had no TARGET_TOKEN.
+class TargetError extends Error {
+  constructor(readonly status: number) {
+    super(`Target returned ${status}.`);
+  }
+}
+
 interface TargetLogs {
   lines: string[];
   untrustedContentHint: true;
@@ -358,7 +368,30 @@ export class Room extends DurableObject<RoomEnv> {
       }
     } catch (error) {
       console.error("Room operation failed", error);
-      this.fail(session, "target_unavailable", "The scripted target did not respond. Try again.", requestId);
+      const denied = error instanceof TargetError && (error.status === 401 || error.status === 403);
+      // apply consumes the approval before calling the target, so a failed
+      // apply always needs a fresh human decision. Saying "try again" here
+      // sends the agent into a needs_human_confirm loop instead.
+      const consumedApproval = message.type === "apply";
+      if (denied) {
+        this.fail(
+          session,
+          "target_forbidden",
+          consumedApproval
+            ? "The room is not authorized to call the target. Ask an operator to set TARGET_TOKEN, then get a fresh approval."
+            : "The room is not authorized to call the target. Ask an operator to set TARGET_TOKEN.",
+          requestId,
+        );
+        return;
+      }
+      this.fail(
+        session,
+        "target_unavailable",
+        consumedApproval
+          ? "The target did not respond, and the approval is spent. Get a fresh approval before retrying."
+          : "The scripted target did not respond. Try again.",
+        requestId,
+      );
     }
   }
 
@@ -590,7 +623,7 @@ export class Room extends DurableObject<RoomEnv> {
     const response: ServerMessage = {
       type: "tool_result",
       requestId: pending.requestId,
-      data: { kind: "confirm", approved },
+      data: { kind: "confirm", approved, reason: approved ? "granted" : "rejected" },
     };
     this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
     this.sendToMember(pending.requesterMemberId, response);
@@ -869,7 +902,7 @@ export class Room extends DurableObject<RoomEnv> {
     const response: ServerMessage = {
       type: "tool_result",
       requestId: pending.requestId,
-      data: { kind: "confirm", approved: false },
+      data: { kind: "confirm", approved: false, reason: "expired" },
     };
     this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
     this.sendToMember(pending.requesterMemberId, response);
@@ -882,7 +915,7 @@ export class Room extends DurableObject<RoomEnv> {
       const response: ServerMessage = {
         type: "tool_result",
         requestId: pending.requestId,
-        data: { kind: "confirm", approved: false },
+        data: { kind: "confirm", approved: false, reason: "expired" },
       };
       this.cacheRequestResponse(pending.requesterMemberId, pending.requestId, response);
       this.sendToMember(pending.requesterMemberId, response);
@@ -1102,7 +1135,7 @@ export class Room extends DurableObject<RoomEnv> {
     try {
       const request = new Request(new URL(path, base), { ...init, signal: controller.signal });
       const response = this.env.TARGET ? await this.env.TARGET.fetch(request) : await fetch(request);
-      if (!response.ok) throw new Error(`Target returned ${response.status}.`);
+      if (!response.ok) throw new TargetError(response.status);
       const text = await response.text();
       if (new TextEncoder().encode(text).byteLength > TOOL_RESULT_BUDGET) throw new Error("Target response exceeded 2 KB.");
       return JSON.parse(text) as T;
