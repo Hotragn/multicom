@@ -1,0 +1,14 @@
+name = "multicom-storefront-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-02"
+
+[[durable_objects.bindings]]
+name = "SCENARIO"
+class_name = "ScenarioState"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ScenarioState"]
+
+[observability]
+enabled = true
