@@ -17,7 +17,7 @@ import type { ParticipationTier, ToolRegistrationSummary, WarRoomEnvironment } f
  * from the tool surface itself.
  */
 export const FIRST_AGENT_INSTRUCTION =
-  "Join this incident room as commander, under the name Priya. That seat is what puts the approval dialog in front of me — you cannot approve anything yourself, and I will be the one clicking. Inspect the service, gather evidence, challenge weak theories, and coordinate a safe fix. Ask me before anything is applied.";
+  "Join this incident room as commander, under the name Judge unless I give you another. That seat is what puts the approval dialog in front of me — you cannot approve anything yourself, and I will be the one clicking. Inspect the service, gather evidence, challenge weak theories, and coordinate a safe fix. Ask me before anything is applied.";
 
 export interface OnboardingCallbacks {
   onDriveManually(): void;

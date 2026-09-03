@@ -92,7 +92,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   counter_hypothesis: "Challenge a theory with contradicting evidence. Returns {kind:'counter', hypothesisId}.",
   propose_mitigation: "Propose a fix from the fixed action library. Returns {kind:'mitigation', mitigationId}.",
   vote: "Vote yes or no; a majority of active members passes it. Returns {kind:'vote', yes, no, passed}.",
-  explain_vote: "Say why you voted as you did. Returns {kind:'rationale', targetId, count}.",
+  explain_vote: "Say why you voted as you did. Returns {kind:'rationale', targetId, count} of all reasons on that target.",
   request_human_confirm: "Ask the seated human commander to approve a passed fix. Returns {kind:'confirm', approved, reason}.",
   apply_mitigation: "Apply a fix the commander approved within 60s. Returns {kind:'apply', applied, status}.",
 };

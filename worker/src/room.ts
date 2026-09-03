@@ -647,6 +647,10 @@ export class Room extends DurableObject<RoomEnv> {
     this.sendToolResult(session, requestId, {
       kind: "rationale",
       targetId,
+      // Every stated reason on this target, from all members — not the
+      // caller's own count, which would always be 1. The tool description
+      // says so, because an agent reading `count: 1` could otherwise take it
+      // for "my rationale was recorded" and never notice the other three.
       count: Object.keys(target.rationales).length,
     });
   }
