@@ -16,6 +16,14 @@ about the incident, and watches what they do.
 > multi-browser run and does not substitute for this; it proves the protocol and
 > the gates hold under concurrency, not that a model can reason from the surface.
 > Nothing here has been re-verified against the current descriptions.
+>
+> A second drill on 2026-09-03 *was* run against the reworked descriptions and
+> found a judge-blocking deadlock: two models diagnosed the incident correctly
+> and then both took `responder`, leaving nobody able to approve. The cause and
+> the fix are in SPEC.md §19.7, and the fixture problem the same drill exposed
+> is in §19.8. The fix has not itself been drilled yet — the only real proof is
+> whether a fresh model now takes the commander seat when it is the only
+> participant.
 
 ## Running it
 

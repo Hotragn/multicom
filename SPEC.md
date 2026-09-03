@@ -649,4 +649,47 @@ Added to §17:
 
 What this does not establish is that a model now completes the run unaided.
 The descriptions were rewritten in response to one drill; the next drill is the
-test of them. `docs/AGENT-DRILL.md` is the procedure.
+test of them. `docs/AGENT-DRILL.md` is the procedure. The added test proves the
+room *can* escape the deadlock, not that an unaided agent *will* avoid it.
+
+### 19.8 Deliberately deferred: `deploy_diff` and the rollback trap
+
+The same drill surfaced an incoherence in the fixture rather than the surface.
+`deploy_diff` reports that deploy `1f3a`'s only change was `DB_POOL_MAX: 50 -> 1`.
+If that is the only change, reverting the deploy must restore the pool — both
+agents reasoned exactly that, correctly — yet `rollback:deploy-1f3a` leaves the
+service at 17%. So the evidence leads a careful agent to the partial fix, and
+the only disclosure to the contrary was an unevidenced action summary.
+
+Two resolutions were considered and rejected:
+
+- Documenting in `actionId` that rollback does not restore the pool. This kills
+  the verification beat §3 exists for.
+- Disclosing that the previous version also had `max=1`. **This does not work**:
+  it makes `DB_POOL_MAX: 50 -> 1` false and exonerates `1f3a`, dismantling the
+  root cause instead of repairing the logic.
+
+The version that would work is a second `deploy_diff` entry, so that rollback
+reverts the mechanism but not the value:
+
+```
+changes: ["DB_POOL_MAX: 50 -> 1", "pool sizing moved to runtime config, persists across rollback"]
+```
+
+Rollback's partial failure becomes derivable from evidence, the root cause is
+untouched, and an agent can reason all the way to `scale_pool:default` rather
+than choosing between two plausible actions. It is deferred, not rejected: it
+would be a third amendment to frozen `shared/scenario.ts`, it makes the puzzle
+easier, and it invalidates the drill evidence and the regenerated screenshots.
+
+What ships instead is §19.7's `actionId` wording — each action's effect on the
+error rate is explicitly not promised, and the caller is told to read
+`get_service_status` afterwards. That converts rollback's partial failure from
+an arbitrary contradiction into the reason verification exists, which is the
+beat §3 wanted, set up by the tool surface rather than hidden from it.
+
+Related, and also left alone: both mitigations can pass their votes at once.
+The vote gates whether a fix has support, not which fix wins; the approval
+dialog names one specific action with its blast radius, and the human chooses.
+Two supported proposals with a person deciding between them is what an incident
+looks like.
