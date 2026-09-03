@@ -9,6 +9,7 @@ import {
   formatErrorRate,
   formatLatency,
   heroHeadline,
+  inviteCopy,
   phaseLabel,
 } from "./format";
 
@@ -37,5 +38,8 @@ describe("room display formatting", () => {
     expect(heroHeadline("diagnosing", 1)).toBe("One theory on the board");
     expect(heroHeadline("diagnosing", 3)).toBe("Three theories, one cause");
     expect(heroHeadline("triage", 0)).toBe("Production is down");
+    expect(inviteCopy({ seated: 0, demo: false }).title).toContain("waiting for people");
+    expect(inviteCopy({ seated: 2, demo: false }).title).toContain("2 people");
+    expect(inviteCopy({ seated: 1, demo: true }).body).toContain("start your own incident");
   });
 });

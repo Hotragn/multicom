@@ -17,7 +17,9 @@ coordination with anyone else evaluating at the same time.
 
 > **[multicom-web.pages.dev](https://multicom-web.pages.dev/)**
 
-Then pick a way in. All three drive the same messages and the same gates:
+Then pick a way in. All three drive the same messages and the same gates. To
+collaborate, copy **Invite** in the room and open that link in a second
+browser — isolation is from other judges, not from teammates.
 
 | | |
 | --- | --- |

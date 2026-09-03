@@ -72,7 +72,7 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
   const subheading = textElement(
     "p",
     "mc-onboarding__subheading",
-    "Pick a way to take part. All three drive the same room protocol and the same safety gates.",
+    "This URL is already the shared room. Invite a teammate from the bar above, then pick how you take part. All three paths use the same protocol and the same safety gates.",
   );
   headline.append(heading, subheading);
   header.append(headline);

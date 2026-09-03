@@ -20,7 +20,7 @@ const FEATURES: Array<{ icon: Parameters<typeof icon>[0]; title: string; body: s
   {
     icon: "users",
     title: "Many people, many agents, one page",
-    body: "Up to six participants share a room over one WebSocket. Everyone sees the same board in real time.",
+    body: "Up to six people and their agents share one WebSocket. Copy the invite from the room — isolation is from other judges, not from your teammates.",
   },
   {
     icon: "vote",
@@ -50,8 +50,8 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
   const app = element("div", "mc-war-room mc-lobby");
   app.dataset.testid = "lobby";
 
-  const skipLink = textElement("a", "mc-skip-link", "Skip to the two ways in");
-  skipLink.href = "#mc-lobby-paths";
+  const skipLink = textElement("a", "mc-skip-link", "Skip to how a session works");
+  skipLink.href = "#mc-guide-heading";
 
   const topbar = element("div", "mc-topbar");
   const brand = element("div", "mc-brand");
@@ -87,6 +87,48 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
   copy.append(eyebrow, title, subtitle);
   hero.append(stage, copy);
 
+  const guide = element("section", "mc-guide");
+  guide.dataset.testid = "site-onboarding";
+  guide.setAttribute("aria-labelledby", "mc-guide-heading");
+  const guideIntro = element("header", "mc-guide__intro");
+  const guideHeading = textElement("h2", "mc-guide__heading", "How a session works");
+  guideHeading.id = "mc-guide-heading";
+  const guideSub = textElement(
+    "p",
+    "mc-guide__sub",
+    "This is a multiplayer room, not a single-agent chat. The page you open is the same board everyone else sees.",
+  );
+  guideIntro.append(guideHeading, guideSub);
+  const steps = element("ol", "mc-guide__steps");
+  const GUIDE_STEPS: Array<{ title: string; body: string }> = [
+    {
+      title: "Start or open a room",
+      body: "Start your own incident for a private copy of the fault, or open an invite someone sent you. Watch the live demo only if you want the curated public room.",
+    },
+    {
+      title: "Invite a person",
+      body: "In the room, copy the invite link and open it in a second browser — or send it to a teammate. They land on the same live board. Isolation is from other judges, not from collaborators.",
+    },
+    {
+      title: "Take seats, then bring agents",
+      body: "One person claims commander (that click is the only approval). Everyone else joins as responder. Each person copies the agent instruction from their own page so their agent joins the same room.",
+    },
+    {
+      title: "Argue, vote, approve",
+      body: "Evidence, theories, and votes appear for everyone at once. A majority is not a write. The commander clicks Approve; then the graph can go green.",
+    },
+  ];
+  for (const [index, step] of GUIDE_STEPS.entries()) {
+    const item = element("li", "mc-guide__step");
+    item.append(textElement("span", "mc-guide__ordinal", String(index + 1)));
+    const text = element("div", "mc-guide__text");
+    text.append(textElement("h3", "mc-guide__title", step.title));
+    text.append(textElement("p", "mc-guide__body", step.body));
+    item.append(text);
+    steps.append(item);
+  }
+  guide.append(guideIntro, steps);
+
   const paths = element("section", "mc-paths");
   paths.id = "mc-lobby-paths";
   paths.setAttribute("aria-labelledby", "mc-paths-heading");
@@ -100,7 +142,7 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
     textElement(
       "p",
       "mc-path__body",
-      "A fresh room with its own copy of the fault. You are the commander, no secret needed, and nobody else can touch it. This is the path to evaluate.",
+      "A fresh room with its own copy of the fault. You can claim commander with no secret. Share the invite with teammates — they join the same board. Other judges get their own rooms.",
     ),
   );
   const ownStatus = textElement("p", "mc-path__status", "");
@@ -169,7 +211,7 @@ export function mountLobby(root: HTMLElement, actions: LobbyActions): MountedLob
     ),
   );
 
-  app.append(skipLink, topbar, hero, paths, features, footer);
+  app.append(skipLink, topbar, hero, guide, paths, features, footer);
   app.dataset.motion = prefersReducedMotion() ? "reduced" : "full";
   root.classList.add("mc-host");
   root.replaceChildren(app);

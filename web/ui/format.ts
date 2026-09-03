@@ -100,9 +100,34 @@ export function commanderSeatTaken(
  */
 export function agentInstruction(commanderTaken: boolean): string {
   if (commanderTaken) {
-    return "Join this incident room as a responder. The commander seat is already taken — do not claim it. Inspect the service, gather evidence, challenge weak theories, and vote on a safe fix. A human in the commander seat must approve anything applied; you cannot approve a write yourself.";
+    return "Join this incident room as a responder. The commander seat is already taken — do not claim it. Work the shared board with anyone already here: inspect the service, gather evidence, challenge weak theories, and vote on a safe fix. A human in the commander seat must approve anything applied; you cannot approve a write yourself.";
   }
-  return "Join this incident room as commander, under the name Judge unless I give you another. That seat is what puts the approval dialog in front of me — you cannot approve anything yourself, and I will be the one clicking. Inspect the service, gather evidence, challenge weak theories, and coordinate a safe fix. Ask me before anything is applied.";
+  return "Join this incident room as commander, under the name Judge unless I give you another. That seat is what puts the approval dialog in front of me — you cannot approve anything yourself, and I will be the one clicking. Work the shared board with anyone who joins: inspect the service, gather evidence, challenge weak theories, and coordinate a safe fix. Ask me before anything is applied.";
+}
+
+export function inviteCopy(input: { seated: number; demo: boolean }): { title: string; body: string } {
+  if (input.demo) {
+    return {
+      title: "Public demo — anyone with the link is already here",
+      body: "This curated incident is shared with other visitors. To run a private session with teammates, start your own incident from the lobby, then send them that room's invite.",
+    };
+  }
+  if (input.seated <= 0) {
+    return {
+      title: "This room is waiting for people",
+      body: "Copy the invite link and open it in another browser, or send it to a teammate. They land on this same live board. The first person to claim commander holds approval; everyone after joins as a responder.",
+    };
+  }
+  if (input.seated === 1) {
+    return {
+      title: "One person is seated",
+      body: "The board is live, but a second browser is what makes this a room. Copy the invite link. The next person should join as a responder and can bring their own agent.",
+    };
+  }
+  return {
+    title: `${input.seated} people in this room`,
+    body: "Hypotheses, votes, and health already update for everyone here. Copy the invite if someone else still needs the link.",
+  };
 }
 
 export const FIRST_AGENT_INSTRUCTION = agentInstruction(false);

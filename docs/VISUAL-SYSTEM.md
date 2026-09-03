@@ -11,8 +11,10 @@ One page, four regions, in reading order.
 
 | Region | Role |
 | --- | --- |
-| Topbar | Brand, room code, share, judge console toggle, connection state |
-| Presence rail | Who is here, their role, and a pulse when they act |
+| Topbar | Brand, room code, invite, judge console toggle, connection state |
+| Presence rail | Who is seated, their role, and a pulse when they act |
+| Invite strip | Copy the room link; tells you whether a second person is still needed |
+| Onboarding | Three ways in, once you have the page |
 | Hero | What this is, what phase the incident is in, and which tier you are driving |
 | Dashboard | Service health: error-rate gauge, p99 timeline, pool, deploy, MTTR |
 | Investigation | The reasoning chain, as a chain |

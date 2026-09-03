@@ -169,12 +169,14 @@
 .mc-hero,
 .mc-connection-banner,
 .mc-notice,
+.mc-invite,
 .mc-onboarding,
 .mc-tabbar,
 .mc-main,
 .mc-manual,
 .mc-judge,
 .mc-safety-note,
+.mc-guide,
 .mc-paths,
 .mc-features {
   width: min(100%, 92rem);
@@ -608,6 +610,43 @@
   margin: 0.3rem 0 0;
   color: var(--mc-muted);
   font-size: 0.9rem;
+}
+
+/* --- invite --------------------------------------------------------------- */
+
+.mc-invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.15rem;
+  margin-bottom: var(--mc-gap);
+  border: 1px solid color-mix(in srgb, var(--mc-accent) 40%, var(--mc-line-strong));
+  border-radius: var(--mc-radius-lg);
+  background: linear-gradient(180deg, var(--mc-surface-raised), var(--mc-surface));
+}
+
+.mc-invite__copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: min(100%, 24rem);
+  flex: 1;
+}
+
+.mc-invite__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mc-invite__body {
+  margin: 0;
+  color: var(--mc-muted);
+  font-size: 0.88rem;
+}
+
+.mc-invite .mc-button {
+  flex: 0 0 auto;
 }
 
 .mc-tiers {
@@ -2012,6 +2051,79 @@ circle.mc-timeline__head {
   padding: 2.5rem 0 3rem;
 }
 
+.mc-guide {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: var(--mc-gap);
+}
+
+.mc-guide__intro {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.mc-guide__heading {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.mc-guide__sub {
+  margin: 0;
+  color: var(--mc-muted);
+  font-size: 0.92rem;
+}
+
+.mc-guide__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.mc-guide__step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  align-content: start;
+  padding: 1rem;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius);
+  background: var(--mc-surface);
+}
+
+.mc-guide__ordinal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 1px solid var(--mc-line-strong);
+  background: var(--mc-surface-raised);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--mc-font-mono);
+}
+
+.mc-guide__text {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.mc-guide__title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.mc-guide__body {
+  margin: 0;
+  color: var(--mc-muted);
+  font-size: 0.84rem;
+}
+
 .mc-paths {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
@@ -2181,9 +2293,11 @@ circle.mc-timeline__head {
   .mc-drawer,
   .mc-judge,
   .mc-manual,
+  .mc-invite,
   .mc-onboarding,
   .mc-tier,
   .mc-path,
+  .mc-guide__step,
   .mc-feature,
   .mc-state-label,
   .mc-count,

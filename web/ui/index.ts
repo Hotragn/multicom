@@ -9,6 +9,7 @@ import { createDashboard, type DashboardSection, type StatusPoint } from "./dash
 import { button, element, prefersReducedMotion, setHidden, setText, textElement } from "./dom";
 import { createHero, type HeroSection } from "./hero";
 import { icon, iconClass } from "./icons";
+import { createInviteStrip, type InviteStrip } from "./invite";
 import { createInvestigation, type InvestigationSection } from "./investigation";
 import { createJudgeConsole, type JudgeConsole } from "./judge-console";
 import { createManualControls, type ManualControls } from "./manual-controls";
@@ -113,6 +114,7 @@ interface Shell {
   tabs: Map<Tab, HTMLButtonElement>;
   liveAnnouncement: HTMLParagraphElement;
   presence: PresenceRail;
+  invite: InviteStrip;
   hero: HeroSection;
   dashboard: DashboardSection;
   investigation: InvestigationSection;
@@ -287,6 +289,10 @@ export function mountWarRoom(
       elapsedSeconds: elapsedSeconds(),
     });
     shell.presence.render(model.room);
+    shell.invite.render({
+      seated: model.room?.members.filter((member) => member.agentActive).length ?? 0,
+      demo: environment.demo,
+    });
     renderInvestigation();
     shell.activity.render(model.room);
     shell.onboarding.render({
@@ -511,12 +517,12 @@ export function mountWarRoom(
     roomChip.append(roomCode);
     roomChip.setAttribute("aria-label", `Room ${environment.shortCode}`);
 
-    const shareButton = button("mc-icon-button", "Share this room", () => {
-      void copyText(environment.shareUrl, "Room link");
+    const shareButton = button("mc-icon-button", "Invite", () => {
+      void copyText(environment.shareUrl, "Invite link");
     });
     shareButton.dataset.testid = "share-room";
     shareButton.prepend(icon("share"));
-    shareButton.title = "Copy this room's link. It never carries a commander secret.";
+    shareButton.title = "Copy this room's invite. It never carries a commander secret.";
 
     const judgeToggle = button("mc-icon-button", "Judge console", () => {
       shell.judge.setOpen(!shell.judge.isOpen());
@@ -537,6 +543,9 @@ export function mountWarRoom(
 
     // Presence ---------------------------------------------------------------
     const presence = createPresenceRail();
+    const invite = createInviteStrip(() => {
+      void copyText(environment.shareUrl, "Invite link");
+    });
 
     // Hero -------------------------------------------------------------------
     const hero = createHero();
@@ -666,6 +675,7 @@ export function mountWarRoom(
       skipLink,
       topbar,
       presence.root,
+      invite.root,
       hero.root,
       connectionBanner,
       notice,
@@ -698,6 +708,7 @@ export function mountWarRoom(
       tabs,
       liveAnnouncement,
       presence,
+      invite,
       hero,
       dashboard,
       investigation,

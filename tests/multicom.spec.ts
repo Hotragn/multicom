@@ -373,7 +373,7 @@ test("shows a live room to a judge who opens the demo link with no agent", async
     // end. Every judge must now be offered a path that works where they are.
     const onboarding = page.getByTestId("spectator-banner");
     await expect(onboarding).toBeVisible();
-    await expect(onboarding).toContainText("Pick a way to take part");
+    await expect(onboarding).toContainText("This URL is already the shared room");
     await expect(page.getByTestId("tier-agent")).toBeVisible();
     await expect(page.getByTestId("agent-instruction")).toContainText("Join this incident room");
     await expect(page.getByTestId("drive-manually")).toBeEnabled();
@@ -434,6 +434,7 @@ test("agent instruction and headline follow the live room", async ({ browser }) 
     await join(commander, "Priya", "commander");
     await expect(commander.getByTestId("spectator-banner")).toBeHidden();
     await expect(commander.getByText("Room is quiet")).toBeHidden();
+    await expect(commander.getByTestId("invite-strip")).toContainText("One person is seated");
 
     const visitor = await newRoomPage(context, room);
     await expect(visitor.getByTestId("agent-instruction")).toContainText("as a responder");
@@ -804,6 +805,7 @@ test("the lobby provisions an isolated room and opens it", async ({ browser }) =
     const page = await context.newPage();
     await page.goto(`${app.origin}/`);
     await expect(page.getByTestId("lobby")).toBeVisible();
+    await expect(page.getByTestId("site-onboarding")).toContainText("Invite a person");
     await expect(page.getByTestId("start-own-incident")).toBeVisible();
     await expect(page.getByTestId("watch-live-demo")).toBeVisible();
 
@@ -815,6 +817,8 @@ test("the lobby provisions an isolated room and opens it", async ({ browser }) =
 
     // The room code is visible so a judge can tell two sessions apart.
     await expect(page.getByTestId("room-code")).toContainText(minted.slice(1, 5).toUpperCase());
+    await expect(page.getByTestId("invite-strip")).toContainText("waiting for people");
+    await expect(page.getByTestId("copy-invite")).toBeVisible();
   } finally {
     await context.close();
   }

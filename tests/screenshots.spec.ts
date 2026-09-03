@@ -75,6 +75,7 @@ test("captures the lobby a judge lands on", async ({ browser }) => {
     const page = await context.newPage();
     await page.goto(`${app.origin}/`);
     await expect(page.getByTestId("start-own-incident")).toBeVisible();
+    await expect(page.getByTestId("site-onboarding")).toBeVisible();
     await expect(page.getByTestId("watch-live-demo")).toBeVisible();
     // Wait for the 3D layer so the hero is not a blank stage in the shot.
     await expect

@@ -90,7 +90,7 @@ export function createPresenceRail(): PresenceRail {
       if (members.length === 0) {
         const empty = element("li", "mc-presence__item mc-presence__item--empty");
         empty.append(icon("users"));
-        empty.append(textElement("span", "mc-presence__name", "Waiting for responders"));
+        empty.append(textElement("span", "mc-presence__name", "Invite a teammate"));
         list.append(empty);
       }
     },
