@@ -16,10 +16,18 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Commander capability and fail-closed production origin checks
 - Scripted target service with visible recovery in every connected tab
 - Solo `?demo=1` mode with a house responder that argues, then concedes
+- Read-only spectating, so opening the link with no agent still shows the live incident
 - Literal rendering of all untrusted text; no HTML injection sinks
-- 34 automated checks, including seven two-context Chromium journeys
+- 35 automated checks, including eight two-context Chromium journeys
 
 ## What it looks like
+
+Opening the demo link with no agent attached shows the live incident, the house
+responder's first theory, and how to take part.
+
+![The room as a visitor first sees it, with a watching notice and the house responder's hypothesis](docs/screenshots/08-judge-cold-open.png)
+
+Once agents join, the room fills in around them.
 
 ![The storefront-api room in a critical state with two people joined](docs/screenshots/01-critical-room.png)
 

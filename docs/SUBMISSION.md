@@ -52,7 +52,7 @@ WebMCP is not an add-on to the demo; it is the product boundary. The same page e
 - Fixed server-side action library and protected target service
 - Mutation replay protection and bounded request correlation
 - Untrusted-output marking, 2 KB results, and text-only rendering
-- Solo house responder for judges opening `?demo=1`
+- Solo house responder for judges opening `?demo=1`, with no agent required to watch
 - Visible service recovery shared across every connected browser
 
 ## Architecture
@@ -65,7 +65,7 @@ Codex helped turn the initial specification into frozen shared contracts, then b
 
 ## Testing
 
-Run `npm test`. The command checks TypeScript and 34 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, five target tests, and seven Chromium journeys. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
+Run `npm test`. The command checks TypeScript and 35 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, five target tests, and eight Chromium journeys. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
 
 ## Judging fit
 
@@ -99,6 +99,7 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 | 5 | `05-resolved-second-browser.png` | The same resolution in the second browser context |
 | 6 | `06-untrusted-text-literal.png` | The injection-trap log line rendered as literal text |
 | 7 | `07-mobile-room.png` | The room at 390 px |
+| 8 | `08-judge-cold-open.png` | What a visitor sees with no agent attached: live metrics, the house responder's theory, and the watching notice |
 
 One shot still needs a live capture by hand, because it exists only in the agent
 client rather than in the page: the browser WebMCP tool list showing all eleven

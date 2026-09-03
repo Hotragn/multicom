@@ -62,6 +62,7 @@ interface StatusPoint {
 }
 
 interface UiModel {
+  joined: boolean;
   room: RoomState | null;
   status: ServiceStatus | null;
   statusHistory: StatusPoint[];
@@ -78,6 +79,7 @@ interface ShellRefs {
   connectionIcon: HTMLElement;
   connectionText: HTMLSpanElement;
   connectionBanner: HTMLDivElement;
+  spectatorBanner: HTMLDivElement;
   connectionBannerText: HTMLParagraphElement;
   notice: HTMLDivElement;
   noticeText: HTMLParagraphElement;
@@ -242,6 +244,19 @@ function createShell(root: HTMLElement): ShellRefs {
   );
   connectionBanner.append(connectionBannerText);
 
+  const spectatorBanner = element("div", "mc-spectator-banner");
+  spectatorBanner.dataset.testid = "spectator-banner";
+  spectatorBanner.setAttribute("role", "status");
+  spectatorBanner.hidden = true;
+  spectatorBanner.append(icon("users"));
+  spectatorBanner.append(
+    textElement(
+      "p",
+      "",
+      "Watching this room live. To take part, open this page in a browser with a WebMCP agent and ask it to join the room.",
+    ),
+  );
+
   const notice = element("div", "mc-notice");
   notice.setAttribute("role", "alert");
   notice.hidden = true;
@@ -348,6 +363,7 @@ function createShell(root: HTMLElement): ShellRefs {
     topbar,
     statusHeader,
     connectionBanner,
+    spectatorBanner,
     notice,
     boards,
     safetyNote,
@@ -364,6 +380,7 @@ function createShell(root: HTMLElement): ShellRefs {
     connectionText,
     connectionBanner,
     connectionBannerText,
+    spectatorBanner,
     notice,
     noticeText,
     noticeDismiss,
@@ -765,6 +782,12 @@ function connectionCopy(state: UiConnectionState): { badge: string; body: string
   }
 }
 
+// A judge can open the room with no agent attached. Say so plainly, so an
+// unjoined room reads as "watching" rather than "broken".
+function renderSpectator(model: UiModel, refs: ShellRefs): void {
+  setHidden(refs.spectatorBanner, model.joined || model.connection.state !== "open");
+}
+
 function renderConnection(model: UiModel, refs: ShellRefs): void {
   const copy = connectionCopy(model.connection);
   refs.app.dataset.connection = model.connection.state;
@@ -783,6 +806,7 @@ function renderConnection(model: UiModel, refs: ShellRefs): void {
       ? "alert"
       : "status",
   );
+  renderSpectator(model, refs);
 }
 
 function renderConfirmation(model: UiModel, refs: ShellRefs, now: () => number): void {
@@ -835,6 +859,7 @@ export function mountWarRoom(
   const now = options.now ?? Date.now;
   const refs = createShell(root);
   const model: UiModel = {
+    joined: false,
     room: null,
     status: null,
     statusHistory: [],
@@ -879,6 +904,7 @@ export function mountWarRoom(
 
   const renderRoom = (): void => {
     refs.app.setAttribute("aria-busy", model.room ? "false" : "true");
+    renderSpectator(model, refs);
     renderStatus(model, refs, now);
     renderHypotheses(model, refs);
     renderMitigations(model, refs, client, onVote);
@@ -911,6 +937,9 @@ export function mountWarRoom(
     }
     switch (message.type) {
       case "joined":
+        model.joined = true;
+        acceptRoom(message.state);
+        break;
       case "state":
         acceptRoom(message.state);
         break;

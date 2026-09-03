@@ -12,7 +12,7 @@ It runs in this order and stops on the first failure:
 2. UI formatting tests.
 3. WebMCP definition, validation, output-budget, registration, correlation, and malformed-message tests.
 4. Room voting/protocol and target scenario tests.
-5. Seven Chromium acceptance journeys.
+5. Eight Chromium acceptance journeys.
 
 ## Browser coverage
 
@@ -25,6 +25,7 @@ It runs in this order and stops on the first failure:
 | Decision gate | Non-passed, unapproved, invented, expired, and replayed actions fail safely |
 | Recovery | `scale_pool:default` reaches <2% errors and resolved state in both tabs within 10 seconds |
 | Demo mode | House responder joins within 3 seconds, proposes by 10 seconds, then counters weak evidence |
+| Spectating | A page that never joins still gets live metrics, the house hypothesis, a watching notice, and no write access |
 | Limits | Commander capability, six-person capacity, five hypotheses, malformed/oversized messages |
 | Idempotency | Replaying one mutation request ID creates one hypothesis |
 
@@ -37,6 +38,7 @@ Cloudflare does not currently ship the `workerd` binary used by Wrangler local d
 This is a host-tooling limitation, not an ignored product test. A release is ready only after these live checks pass against the actual Workers:
 
 - [ ] Target `/health` and room `/health` return 200.
+- [ ] Opening the demo link with no agent shows live metrics and the house responder.
 - [ ] A responder cannot claim commander without the capability.
 - [ ] Two separate browser sessions join the same room.
 - [ ] The agent can call all 11 tools through the real browser WebMCP surface.

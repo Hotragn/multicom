@@ -270,6 +270,7 @@ export class RoomClient {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionallyClosed = false;
+  private watching = false;
   private currentConnectionState: RoomConnectionState = { state: "closed" };
   private latestState: RoomState | null = null;
   private latestStatus: ServiceStatus | null = null;
@@ -308,6 +309,23 @@ export class RoomClient {
 
   async connect(): Promise<void> {
     await this.ensureOpen(false);
+  }
+
+  // Open the room and read the board without joining, so the page shows the live
+  // incident to someone who opened the link before any agent attached.
+  async watch(): Promise<void> {
+    this.watching = true;
+    await this.ensureOpen(false);
+    await this.hydrate();
+  }
+
+  private async hydrate(): Promise<void> {
+    if (this.memberId) return;
+    try {
+      await this.dispatchRequest((requestId) => ({ type: "get_room_state", requestId }), "room_state");
+    } catch {
+      // Not fatal: the room pushes state on its next broadcast anyway.
+    }
   }
 
   async join(name: string, role: RoomRole, signal?: AbortSignal): Promise<JoinResult> {
@@ -490,6 +508,15 @@ export class RoomClient {
     timeoutMs = this.requestTimeoutMs,
   ): Promise<ToolResultData> {
     await this.ensureSession(signal);
+    return this.dispatchRequest(createMessage, expectedKind, signal, timeoutMs);
+  }
+
+  private async dispatchRequest(
+    createMessage: (requestId: string) => ClientMessage,
+    expectedKind: ToolResultData["kind"],
+    signal?: AbortSignal,
+    timeoutMs = this.requestTimeoutMs,
+  ): Promise<ToolResultData> {
     if (signal?.aborted) throw abortError();
     if (this.pending.size >= MAX_PENDING_REQUESTS) {
       throw new RoomClientError("too_many_requests", "Too many tool calls are still pending.");
@@ -644,6 +671,7 @@ export class RoomClient {
     } else if (message.type === "confirm_request") {
       this.latestConfirmation = message;
     } else if (message.type === "tool_result") {
+      if (message.data.kind === "room_state") this.latestState = message.data.state;
       const pending = this.pending.get(message.requestId);
       if (pending) {
         if (message.data.kind !== pending.expectedKind) {
@@ -673,7 +701,7 @@ export class RoomClient {
     this.memberId = null;
     this.failAll(new RoomClientError("connection_lost", "The room connection was interrupted."));
     this.rejectJoin(new RoomClientError("connection_lost", "The room connection was interrupted."));
-    if (this.intentionallyClosed || !this.autoReconnect || !this.credentials) {
+    if (this.intentionallyClosed || !this.autoReconnect || (!this.credentials && !this.watching)) {
       this.emitConnection({ state: "closed" });
       return;
     }
@@ -721,6 +749,7 @@ export class RoomClient {
       try {
         await this.ensureOpen(true);
         if (this.credentials) await this.sendJoin(this.credentials);
+        else if (this.watching) await this.hydrate();
       } catch {
         this.scheduleReconnect();
       }

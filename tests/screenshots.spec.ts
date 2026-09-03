@@ -38,9 +38,10 @@ async function newRoomPage(
   context: BrowserContext,
   room: string,
   commander = false,
+  demo = false,
 ): Promise<Page> {
   const page = await context.newPage();
-  await openRoom(page, app.origin, room, false, commander ? "test-commander-token" : undefined);
+  await openRoom(page, app.origin, room, demo, commander ? "test-commander-token" : undefined);
   return page;
 }
 
@@ -108,6 +109,21 @@ test("captures the incident room walkthrough", async ({ browser }) => {
   } finally {
     await commanderContext.close();
     await responderContext.close();
+  }
+});
+
+test("captures the cold open a judge sees with no agent attached", async ({ browser }) => {
+  harness.reset();
+  const context = await browser.newContext({ viewport: DESKTOP });
+  try {
+    // No join_room call: this is exactly what opening the public demo link shows.
+    const page = await newRoomPage(context, "shots-spectator", false, true);
+    await expect(page.getByTestId("spectator-banner")).toBeVisible();
+    const redHerring = page.locator('[data-testid="hypothesis-card"]', { hasText: "new-checkout flag caused" });
+    await expect(redHerring).toBeVisible({ timeout: 12_000 });
+    await shoot(page, "08-judge-cold-open", 4_000);
+  } finally {
+    await context.close();
   }
 });
 

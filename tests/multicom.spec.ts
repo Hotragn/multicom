@@ -280,6 +280,50 @@ test("demo mode joins and argues through the shared protocol on schedule", async
   }
 });
 
+test("shows a live room to a judge who opens the demo link with no agent", async ({ browser }) => {
+  test.setTimeout(25_000);
+  const context = await browser.newContext();
+  try {
+    // No join_room call anywhere in this test: this is the cold-open judge path.
+    const page = await newRoomPage(context, "spectator", true);
+    const started = performance.now();
+
+    await expect(page.getByTestId("spectator-banner")).toBeVisible();
+    await expect(page.getByTestId("spectator-banner")).toContainText("ask it to join");
+
+    // The service metrics are live rather than placeholder dashes.
+    await expect
+      .poll(async () => {
+        const text = await page.getByTestId("error-rate").textContent();
+        return Number.parseFloat(text ?? "NaN");
+      }, { timeout: 10_000 })
+      .toBeGreaterThan(0);
+
+    // The house responder joins and argues on its own, so the board is not empty.
+    await expect.poll(async () => page.locator(".mc-member-summary").textContent(), { timeout: 5_000 })
+      .toContain("1 person");
+    const redHerring = page.locator('[data-testid="hypothesis-card"]', { hasText: "new-checkout flag caused" });
+    await expect(redHerring).toBeVisible({ timeout: 12_000 });
+    expect(performance.now() - started).toBeLessThan(12_000);
+    await expect(page.getByTestId("hypotheses-list")).toContainText("Responder 2");
+
+    // A spectator still cannot change anything without joining.
+    const blocked = await callTool<ToolFailure>(page, "propose_hypothesis", {
+      title: "Spectators cannot write",
+      evidence: "This must be refused because this browser never joined the room.",
+      confidence: 0.5,
+    });
+    expect(blocked.error).toBeDefined();
+
+    // Joining replaces the watching notice with a seat at the table.
+    await join(page, "Priya", "responder");
+    await expect(page.getByTestId("spectator-banner")).toBeHidden();
+    await expect.poll(async () => page.locator(".mc-member-summary").textContent()).toContain("2 people");
+  } finally {
+    await context.close();
+  }
+});
+
 test("rejects malformed input and enforces room and board limits", async () => {
   const url = `${harness.wsOrigin}/rooms/limits/ws?commander=test-commander-token`;
   const clients: RawClient[] = [];

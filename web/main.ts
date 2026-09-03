@@ -47,7 +47,7 @@ const client = getRoomClient({ url: roomUrl });
 
 mountWarRoom(root, client);
 
-void client.connect().catch(() => {
+void client.watch().catch(() => {
   // Connection state is reported through the UI subscription.
 });
 

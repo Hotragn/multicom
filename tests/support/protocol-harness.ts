@@ -102,6 +102,10 @@ class HarnessRoom {
       void this.receive(peer, raw.toString());
     });
     socket.on("close", () => this.disconnect(peer));
+    if (demo) {
+      this.ensureStatusTimer();
+      this.armBot();
+    }
     return peer;
   }
 
@@ -155,6 +159,14 @@ class HarnessRoom {
       return;
     }
     if (!peer.memberId || !this.member(peer.memberId)?.agentActive) {
+      if (message.type === "get_room_state" && !peer.isBot) {
+        if (peer.demo) {
+          this.ensureStatusTimer();
+          this.armBot();
+        }
+        this.result(peer, message.requestId, { kind: "room_state", state: clone(this.state) });
+        return;
+      }
       this.error(peer, "requestId" in message ? message.requestId : undefined, "join_required", "Join the room first.");
       return;
     }

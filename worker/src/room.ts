@@ -177,7 +177,7 @@ export class Room extends DurableObject<RoomEnv> {
       await this.reconcileConnections();
       this.restoreConfirmationTimers();
       this.scheduleBot();
-      if (this.hasActiveHuman() && this.room.state.phase !== "resolved") this.startStatusTimer();
+      if (this.hasActiveViewer() && this.room.state.phase !== "resolved") this.startStatusTimer();
     });
   }
 
@@ -205,6 +205,7 @@ export class Room extends DurableObject<RoomEnv> {
       canCommand,
     } satisfies ConnectionAttachment);
     this.ctx.acceptWebSocket(server);
+    if (url.searchParams.get("demo") === "1") this.ctx.waitUntil(this.beginDemoSpectating());
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -247,7 +248,12 @@ export class Room extends DurableObject<RoomEnv> {
   async webSocketClose(socket: WebSocket): Promise<void> {
     await this.ready;
     const attachment = socket.deserializeAttachment() as ConnectionAttachment | null;
-    if (!attachment?.memberId) return;
+    if (!attachment?.memberId) {
+      // A spectator left without ever joining. Stop polling the target once the
+      // last browser is gone, otherwise the timer outlives its audience.
+      await this.handlePresenceChange(socket);
+      return;
+    }
     const member = this.member(attachment.memberId);
     if (!member?.agentActive) return;
     member.agentActive = false;
@@ -255,7 +261,7 @@ export class Room extends DurableObject<RoomEnv> {
     else this.cancelPendingConfirmationsFor(member.id);
     recomputeMitigations(this.room.state);
     this.addActivity(`${member.name} left the war room.`);
-    await this.handlePresenceChange();
+    await this.handlePresenceChange(socket);
     await this.persistAndBroadcast(true);
   }
 
@@ -265,7 +271,7 @@ export class Room extends DurableObject<RoomEnv> {
 
   async alarm(): Promise<void> {
     await this.ready;
-    if (this.hasActiveHuman()) return;
+    if (this.hasActiveViewer()) return;
     this.clearTimers();
     await this.ctx.storage.deleteAll();
     this.room = emptyRoom(this.room.state.id);
@@ -277,6 +283,13 @@ export class Room extends DurableObject<RoomEnv> {
       return;
     }
     if (!session.memberId || !this.member(session.memberId)?.agentActive) {
+      // Reading the board is the only thing a spectator may do before joining.
+      // Joining is unauthenticated anyway, so this grants no new visibility.
+      if (message.type === "get_room_state" && !session.isBot) {
+        if (session.demo) await this.beginDemoSpectating();
+        this.sendToolResult(session, message.requestId, { kind: "room_state", state: cloneState(this.room.state) });
+        return;
+      }
       this.fail(session, "join_required", "Join the room before using this operation.", "requestId" in message ? message.requestId : undefined);
       return;
     }
@@ -628,7 +641,7 @@ export class Room extends DurableObject<RoomEnv> {
   }
 
   private async broadcastStatus(): Promise<void> {
-    if (!this.hasActiveHuman() || this.room.state.phase === "resolved") return;
+    if (!this.hasActiveViewer() || this.room.state.phase === "resolved") return;
     try {
       const status = await this.targetGet<ServiceStatus>("/status");
       this.broadcast({ type: "status", ...status });
@@ -658,8 +671,23 @@ export class Room extends DurableObject<RoomEnv> {
     this.statusTimer = undefined;
   }
 
+  // A judge can open the demo link in a browser with no agent attached. Arm the
+  // house bot and the status feed for that connection so the room shows the live
+  // incident instead of an empty board while it waits for someone to join.
+  private async beginDemoSpectating(): Promise<void> {
+    if (this.room.state.phase === "resolved") return;
+    const alreadyArmed = this.room.bot.enabled && this.room.bot.humanJoinedAt !== null;
+    this.room.bot.enabled = true;
+    this.room.bot.humanJoinedAt ??= Date.now();
+    await this.ctx.storage.deleteAlarm();
+    if (!alreadyArmed) await this.persist();
+    this.startStatusTimer();
+    this.scheduleBot();
+    await this.broadcastStatus();
+  }
+
   private scheduleBot(): void {
-    if (!this.room.bot.enabled || this.room.bot.humanJoinedAt === null || !this.hasActiveHuman()) return;
+    if (!this.room.bot.enabled || this.room.bot.humanJoinedAt === null || !this.hasActiveViewer()) return;
     if (!this.room.bot.memberId) {
       const delay = Math.max(0, this.room.bot.humanJoinedAt + BOT_JOIN_DELAY_MS - Date.now());
       if (!this.botJoinTimer) this.botJoinTimer = setTimeout(() => void this.botJoin(), delay);
@@ -695,7 +723,7 @@ export class Room extends DurableObject<RoomEnv> {
 
   private async botJoin(): Promise<void> {
     this.botJoinTimer = undefined;
-    if (!this.hasActiveHuman() || this.room.bot.memberId) return;
+    if (!this.hasActiveViewer() || this.room.bot.memberId) return;
     await this.dispatch(this.botSession(), { type: "join", name: "Responder 2", role: "responder" });
     await this.persist();
     this.scheduleBot();
@@ -703,7 +731,7 @@ export class Room extends DurableObject<RoomEnv> {
 
   private async botHypothesis(): Promise<void> {
     this.botHypothesisTimer = undefined;
-    if (!this.hasActiveHuman() || this.room.bot.hypothesisId) return;
+    if (!this.hasActiveViewer() || this.room.bot.hypothesisId) return;
     if (!this.room.bot.memberId) await this.botJoin();
     if (!this.room.bot.memberId) return;
     await this.dispatch(this.botSession(), {
@@ -740,8 +768,8 @@ export class Room extends DurableObject<RoomEnv> {
     });
   }
 
-  private async handlePresenceChange(): Promise<void> {
-    if (this.hasActiveHuman()) return;
+  private async handlePresenceChange(closing?: WebSocket): Promise<void> {
+    if (this.hasActiveViewer(closing)) return;
     const bot = this.room.bot.memberId ? this.member(this.room.bot.memberId) : undefined;
     if (bot) bot.agentActive = false;
     this.cancelPendingConfirmations();
@@ -763,7 +791,9 @@ export class Room extends DurableObject<RoomEnv> {
     }
     for (const member of this.room.state.members) {
       const isBot = member.id === this.room.bot.memberId;
-      member.agentActive = isBot ? connected.size > 0 && this.room.bot.enabled : connected.has(member.id);
+      member.agentActive = isBot
+        ? this.room.bot.enabled && this.ctx.getWebSockets().length > 0
+        : connected.has(member.id);
     }
     recomputeMitigations(this.room.state);
     await this.persist();
@@ -836,6 +866,14 @@ export class Room extends DurableObject<RoomEnv> {
 
   private hasActiveHuman(): boolean {
     return this.room.state.members.some((member) => member.agentActive && member.id !== this.room.bot.memberId);
+  }
+
+  // The house bot is a synthetic session that never holds a socket, so every open
+  // socket belongs to a person: a joined member, or someone watching before they
+  // join. `closing` excludes a socket that is in the middle of going away.
+  private hasActiveViewer(closing?: WebSocket): boolean {
+    if (this.hasActiveHuman()) return true;
+    return this.ctx.getWebSockets().some((socket) => socket !== closing);
   }
 
   private member(id: string): Member | undefined {

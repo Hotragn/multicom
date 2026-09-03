@@ -83,6 +83,7 @@
 .mc-topbar,
 .mc-status,
 .mc-connection-banner,
+.mc-spectator-banner,
 .mc-notice,
 .mc-boards,
 .mc-safety-note {
@@ -350,6 +351,7 @@
 }
 
 .mc-connection-banner,
+.mc-spectator-banner,
 .mc-notice {
   display: flex;
   align-items: center;
@@ -363,6 +365,7 @@
 }
 
 .mc-connection-banner p,
+.mc-spectator-banner p,
 .mc-notice p {
   margin: 0;
 }
