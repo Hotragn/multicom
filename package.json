@@ -16,7 +16,11 @@
     "test:unit": "npm run test --workspace=@multicom/web && npm run test --workspace=@multicom/web-tools && npm run test --workspace=@multicom/worker && npm run test --workspace=@multicom/target",
     "test:e2e": "playwright test -c tests/playwright.config.ts",
     "test": "npm run typecheck && npm run test:unit && npm run test:e2e",
-    "capture:screenshots": "playwright test -c tests/playwright.screenshots.config.ts"
+    "capture:screenshots": "playwright test -c tests/playwright.screenshots.config.ts",
+    "verify:prod": "node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev",
+    "webmcp:chrome": "node tools/chrome-webmcp-check.mjs",
+    "token:target": "node tools/set-target-token.mjs",
+    "token:commander": "node tools/set-commander-token.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

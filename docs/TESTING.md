@@ -96,9 +96,26 @@ the environment so the capability stays off your command line:
 COMMANDER_TOKEN=... node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev
 ```
 
-The scripts under `tools/` resolve repo paths from their own location, so they
-work from any directory, but `node` still has to be pointed at the file itself:
-from `worker/` that is `node ../tools/live-acceptance.mjs`.
+From the repo root there are shorthands, which is the reliable way to avoid
+pointing `node` at the wrong path:
+
+```bash
+npm run verify:prod
+```
+
+`npm run webmcp:chrome`, `npm run token:target`, and `npm run token:commander`
+are the others. The scripts under `tools/` resolve repo paths from their own
+location, so they read the right files from any directory, but `node` still has
+to be given the path to the file itself.
+
+If the deployed commander capability was never written down, it cannot be read
+back out of Cloudflare. Rotate it and take the new one:
+
+```bash
+npm run token:commander
+```
+
+That prints a fresh commander link and invalidates the previous one.
 
 ## Against a real WebMCP browser
 
