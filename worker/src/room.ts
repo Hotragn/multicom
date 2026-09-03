@@ -770,6 +770,10 @@ export class Room extends DurableObject<RoomEnv> {
     const alreadyArmed = this.room.bot.enabled && this.room.bot.humanJoinedAt !== null;
     this.room.bot.enabled = true;
     this.room.bot.humanJoinedAt ??= Date.now();
+    // Presence is only recomputed when the object wakes, and on wake there may
+    // be no sockets yet, which left the house bot marked absent for the rest of
+    // the room's life: the board showed its hypothesis under "0 people in room".
+    await this.reconcileConnections();
     await this.ctx.storage.deleteAlarm();
     if (!alreadyArmed) await this.persist();
     this.startStatusTimer();

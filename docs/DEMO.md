@@ -2,6 +2,10 @@
 
 ## Before recording
 
+- Check <https://multicom-storefront-api.multicom-target.workers.dev/status> and
+  wait until `errorRate` reads `0.23`. The scripted fault is one global state, so
+  for five minutes after anyone completes a run the service is genuinely healthy
+  and every room reports it that way. It re-arms itself after that.
 - Use two browser sessions in the same room: one private commander link and one responder link.
 - Start with the scripted fault armed and both health indicators red.
 - Keep the browser console closed and zoom at 100%.

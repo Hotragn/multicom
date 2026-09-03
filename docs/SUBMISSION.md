@@ -112,7 +112,7 @@ from `tools/chrome-webmcp-check.mjs`.
 
 ## Known limitations
 
-This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is one global state, so a resolved room restarts only when nobody else is watching it; two judges in the same room at once share one incident.
+This challenge build ships one scripted incident, capability-link commander access, and no account system. A disconnected browser rejoins as a new member, while inactive votes are excluded. The scripted fault is one global state: a resolved room restarts only when nobody has joined it, and for the five minutes after anyone applies the fix every room truthfully reports a healthy service before the fault re-arms itself.
 
 ## Readiness
 
