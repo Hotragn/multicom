@@ -82,6 +82,16 @@ test("captures the incident room walkthrough", async ({ browser }) => {
     await expect(responder.getByText("The error timeline predates")).toBeVisible();
     await shoot(responder, "02-hypothesis-and-rebuttal");
 
+    // A stated reason on a vote, which is what explain_vote exists for.
+    await callTool(commander, "vote", { targetId: hypothesis.hypothesisId, choice: "yes" });
+    await callTool(commander, "explain_vote", {
+      targetId: hypothesis.hypothesisId,
+      rationale: "deploy_diff shows the pool change and nothing else in 1f3a, so this is the only cause that fits.",
+    });
+    await responder.getByTestId("vote-rationales").getByText("stated reason").click();
+    await expect(responder.getByText("deploy_diff shows the pool change")).toBeVisible();
+    await shoot(responder, "10-vote-rationale");
+
     const mitigation = await callTool<{ mitigationId: string }>(responder, "propose_mitigation", {
       hypothesisId: hypothesis.hypothesisId,
       actionId: "scale_pool:default",

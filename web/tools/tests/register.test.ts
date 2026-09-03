@@ -82,8 +82,8 @@ test("initializes the polyfill before detection and registers once after load", 
   listeners.get("load")?.({});
   const result = await first;
   assert.equal(initialized, true);
-  assert.deepEqual(result, { status: "registered", count: 11 });
-  assert.equal(tools.length, 11);
+  assert.deepEqual(result, { status: "registered", count: 12 });
+  assert.equal(tools.length, 12);
 });
 
 test("absence of both modelContext surfaces is a graceful no-op", async () => {

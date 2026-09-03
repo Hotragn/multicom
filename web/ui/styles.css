@@ -474,6 +474,7 @@
 
 .mc-card-list,
 .mc-activity-list,
+.mc-rationales__list,
 .mc-rebuttals__list {
   margin: 0;
   padding: 0;
@@ -520,6 +521,7 @@
 .mc-blast-radius p,
 .mc-vote-area__summary,
 .mc-vote-area__hint,
+.mc-rationale p,
 .mc-rebuttal p {
   margin: 0;
 }
@@ -571,6 +573,7 @@
 .mc-evidence,
 .mc-blast-radius,
 .mc-vote-area,
+.mc-rationales,
 .mc-rebuttals {
   margin-top: 0.9rem;
 }
@@ -646,10 +649,12 @@
   font-size: 0.75rem;
 }
 
+.mc-rationales,
 .mc-rebuttals {
   border-top: 1px solid var(--mc-line);
 }
 
+.mc-rationales__summary,
 .mc-rebuttals__summary {
   padding: 0.75rem 0;
   color: var(--mc-accent);
@@ -658,22 +663,26 @@
   font-weight: 650;
 }
 
+.mc-rationale,
 .mc-rebuttal {
   padding: 0.75rem;
   border-left: 2px solid var(--mc-warning);
   background: var(--mc-surface-subtle);
 }
 
+.mc-rationale + .mc-rationale,
 .mc-rebuttal + .mc-rebuttal {
   margin-top: 0.4rem;
 }
 
+.mc-rationale__author,
 .mc-rebuttal__author {
   color: var(--mc-warning);
   font-size: 0.7rem;
   font-weight: 700;
 }
 
+.mc-rationale__text,
 .mc-rebuttal__text {
   margin-top: 0.25rem !important;
   overflow-wrap: anywhere;
@@ -890,6 +899,7 @@
 @media (hover: hover) {
   .mc-button:not(:disabled),
   .mc-icon-button:not(:disabled),
+  .mc-rationales__summary,
   .mc-rebuttals__summary {
     transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease,
       transform 100ms ease;

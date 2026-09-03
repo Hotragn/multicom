@@ -38,7 +38,7 @@ const openPage = async (commander) => {
   const query = new URLSearchParams({ room });
   if (commander && commanderToken) query.set("commander", commanderToken);
   await page.goto(`${appOrigin}/?${query.toString()}`);
-  await page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === 11, null, { timeout: 30_000 });
+  await page.waitForFunction(() => Object.keys(window.__tools ?? {}).length === 12, null, { timeout: 30_000 });
   return page;
 };
 
@@ -73,7 +73,7 @@ console.log(`fault: ${await rearmTarget()}`);
 const commander = await openPage(true);
 const alice = await openPage(false);
 const bob = await openPage(false);
-check("11 tools register on the real page", true);
+check("12 tools register on the real page", true);
 
 // Nobody may write before joining.
 const preJoin = await call(alice, "propose_hypothesis", { title: "before joining", evidence: "x".repeat(40), confidence: 0.5 });
@@ -131,6 +131,18 @@ check("invented action refused", invented?.error?.code === "unknown_action", inv
 
 await call(alice, "vote", { targetId: mitigation.mitigationId, choice: "yes" });
 await call(bob, "vote", { targetId: mitigation.mitigationId, choice: "yes" });
+
+// A rationale explains a vote, so it needs one first.
+const orphanReason = await call(commander, "explain_vote", { targetId: mitigation.mitigationId, rationale: "No vote cast yet." });
+check("rationale refused without a vote", orphanReason?.error?.code === "no_vote", orphanReason?.error?.code);
+const reason = await call(bob, "explain_vote", {
+  targetId: mitigation.mitigationId,
+  rationale: "Restores DB_POOL_MAX to 50, which is the value the deploy changed.",
+});
+check("vote rationale recorded and counted", reason?.kind === "rationale" && reason.count === 1, JSON.stringify(reason?.error ?? reason));
+await commander.waitForSelector('[data-testid="vote-rationales"]', { timeout: 5_000 });
+const shown = await commander.evaluate(() => document.querySelector('[data-testid="vote-rationales"]').innerText);
+check("rationale reaches the other browser", shown.includes("stated reason"));
 const unapproved = await call(alice, "apply_mitigation", { actionId: "scale_pool:default" });
 check("apply refused with no human approval", unapproved?.error?.code === "needs_human_confirm", unapproved?.error?.code);
 

@@ -1,6 +1,6 @@
 Read AGENTS.md and SPEC.md first. Stay in your lane. Small timestamped commits.
 
-Read SPEC.md §§9, 14. Build `web/tools/`: register all 11 tools with a
+Read SPEC.md §§9, 14. Build `web/tools/`: register all 12 tools with a
 feature-detect between `navigator.modelContext` and `document.modelContext`,
 MCP-B polyfill, descriptions under 120 chars, `readOnlyHint` on 9.2–9.5,
 untrusted marking on log results. Handlers speak `shared/ws-messages.ts`

@@ -363,7 +363,10 @@ multicom/
    within 10 seconds, in every connected tab.
 5. Applying `rollback:deploy-1f3a` does NOT resolve — status stays red.
 6. `?demo=1`: bot joins ≤3s, red-herring hypothesis lands ≤10s.
-7. Exactly 11 tools register; each description under 120 characters.
+7. Exactly 12 tools register; each description under 120 characters.
+   (Was 11. `explain_vote` was added after a drill in which two agents could
+   only register a bare "no" on a mitigation they objected to; see
+   `docs/AGENT-DRILL.md`.)
 8. ChatGPT desktop (GPT-5.6 Sol): an agent joins, queries, proposes, votes,
    and requests confirmation with no typed help beyond the first instruction.
 9. `npm run test` (Playwright, two contexts) green.

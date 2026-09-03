@@ -13,7 +13,7 @@ const state = (): RoomState => ({
     { id: "m3", name: "C", role: "responder", agentActive: false },
   ],
   hypotheses: [],
-  mitigations: [{ id: "fix1", hypothesisId: "h1", actionId: "scale_pool:default", blastRadius: "none", votes: {}, passed: false }],
+  mitigations: [{ id: "fix1", hypothesisId: "h1", actionId: "scale_pool:default", blastRadius: "none", votes: {}, rationales: {}, passed: false }],
   appliedActions: [],
   log: [],
 });

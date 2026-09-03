@@ -102,6 +102,7 @@ const MAX_MEMBERS = 6;
 const MAX_HYPOTHESES = 5;
 const MAX_MITIGATIONS = 3;
 const MAX_REBUTTALS = 10;
+const MAX_RATIONALE = 240;
 const MAX_ACTIVITY = 60;
 const TOOL_RESULT_BUDGET = 2_048;
 const APPROVAL_TTL_MS = 60_000;
@@ -117,6 +118,7 @@ const MUTATING_REQUESTS = new Set<ClientMessage["type"]>([
   "counter",
   "propose_mitigation",
   "vote",
+  "explain_vote",
   "request_confirm",
   "apply",
 ]);
@@ -187,6 +189,8 @@ export class Room extends DurableObject<RoomEnv> {
     this.ready = ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<StoredRoom>(STORE_KEY)) ?? this.room;
       this.room.requestLog ??= {};
+      for (const hypothesis of this.room.state.hypotheses) hypothesis.rationales ??= {};
+      for (const mitigation of this.room.state.mitigations) mitigation.rationales ??= {};
       await this.reconcileConnections();
       this.restoreConfirmationTimers();
       this.scheduleBot();
@@ -359,6 +363,9 @@ export class Room extends DurableObject<RoomEnv> {
         case "vote":
           await this.vote(session, message.targetId, message.choice, requestId);
           return;
+        case "explain_vote":
+          await this.explainVote(session, message.targetId, message.rationale, requestId);
+          return;
         case "request_confirm":
           await this.requestConfirm(session, message.mitigationId, requestId);
           return;
@@ -460,6 +467,7 @@ export class Room extends DurableObject<RoomEnv> {
       confidence: message.confidence,
       rebuttals: [],
       votes: {},
+      rationales: {},
     });
     if (this.room.state.phase === "triage") this.room.state.phase = "diagnosing";
     this.addActivity(`${this.memberName(session)} proposed ${truncate(message.title, 72)} (${message.confidence.toFixed(2)}).`);
@@ -515,6 +523,7 @@ export class Room extends DurableObject<RoomEnv> {
       actionId: rawActionId,
       blastRadius,
       votes: {},
+      rationales: {},
       passed: false,
     });
     this.room.state.phase = "mitigating";
@@ -547,6 +556,44 @@ export class Room extends DurableObject<RoomEnv> {
     this.addActivity(`${this.memberName(session)} voted ${choice} on ${mitigation.actionId}.`);
     await this.persistAndBroadcast(true);
     this.sendToolResult(session, requestId, { kind: "vote", ...result });
+  }
+
+  // Explaining a vote you never cast would make this a general message channel,
+  // and the whole point of the surface is that every tool has one job.
+  private async explainVote(
+    session: Session,
+    targetId: string,
+    rationale: string,
+    requestId: string,
+  ): Promise<void> {
+    if (!this.ensureMutable(session, requestId)) return;
+    const text = rationale.trim();
+    if (!text) {
+      this.fail(session, "invalid_request", "A rationale cannot be empty.", requestId);
+      return;
+    }
+    const memberId = session.memberId!;
+    const target =
+      this.room.state.hypotheses.find((candidate) => candidate.id === targetId) ??
+      this.room.state.mitigations.find((candidate) => candidate.id === targetId);
+    if (!target) {
+      this.fail(session, "not_found", "That vote target does not exist.", requestId);
+      return;
+    }
+    if (!target.votes[memberId]) {
+      this.fail(session, "no_vote", "Vote on this first, then explain the vote.", requestId);
+      return;
+    }
+    target.rationales ??= {};
+    target.rationales[memberId] = truncate(text, MAX_RATIONALE);
+    const label = "title" in target ? truncate(target.title, 56) : target.actionId;
+    this.addActivity(`${this.memberName(session)} explained a ${target.votes[memberId]} vote on ${label}.`);
+    await this.persistAndBroadcast(true);
+    this.sendToolResult(session, requestId, {
+      kind: "rationale",
+      targetId,
+      count: Object.keys(target.rationales).length,
+    });
   }
 
   private async requestConfirm(session: Session, mitigationId: string, requestId: string): Promise<void> {
@@ -1090,6 +1137,7 @@ export class Room extends DurableObject<RoomEnv> {
         const candidate = state.hypotheses.find((hypothesis) => hypothesis.rebuttals.length);
         if (!candidate) break;
         candidate.rebuttals = [];
+        candidate.rationales = {};
       }
       if (encodeSize(message) > TOOL_RESULT_BUDGET) {
         state.log = [];
@@ -1099,8 +1147,13 @@ export class Room extends DurableObject<RoomEnv> {
           title: truncate(hypothesis.title, 20),
           evidence: "",
           rebuttals: [],
+          rationales: {},
         }));
-        state.mitigations = state.mitigations.map((mitigation) => ({ ...mitigation, blastRadius: "" }));
+        state.mitigations = state.mitigations.map((mitigation) => ({
+          ...mitigation,
+          blastRadius: "",
+          rationales: {},
+        }));
       }
     } else if (data.kind === "logs") {
       const lines = [...data.lines];

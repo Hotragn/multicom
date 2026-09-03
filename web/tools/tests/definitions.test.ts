@@ -24,10 +24,10 @@ function unusedClient(): RoomClient {
   });
 }
 
-test("registers exactly the frozen 11-tool definition set", () => {
+test("registers exactly the 12-tool definition set", () => {
   const definitions = createToolDefinitions(unusedClient());
   assert.deepEqual(definitions.map((tool) => tool.name), [...TOOL_NAMES]);
-  assert.equal(new Set(definitions.map((tool) => tool.name)).size, 11);
+  assert.equal(new Set(definitions.map((tool) => tool.name)).size, 12);
 
   for (const tool of definitions) {
     assert.equal(tool.description, TOOL_DESCRIPTIONS[tool.name as keyof typeof TOOL_DESCRIPTIONS]);
@@ -114,6 +114,12 @@ test("large room state is deterministically compacted below 2 KB", () => {
       votes: Object.fromEntries(
         Array.from({ length: 6 }, (_entry, voteIndex) => [`member-${voteIndex}`, "yes"]),
       ),
+      rationales: Object.fromEntries(
+        Array.from({ length: 6 }, (_entry, voteIndex) => [
+          `member-${voteIndex}`,
+          `Because ${"界".repeat(240)}`,
+        ]),
+      ),
     })),
     mitigations: Array.from({ length: 3 }, (_, index) => ({
       id: `mitigation-${index}`,
@@ -121,6 +127,7 @@ test("large room state is deterministically compacted below 2 KB", () => {
       actionId: "scale_pool:default",
       blastRadius: `Reconnect ${"界".repeat(180)}`,
       votes: { "member-0": "yes" },
+      rationales: { "member-0": `Objecting because ${"界".repeat(240)}` },
       passed: true,
     })),
     appliedActions: [],

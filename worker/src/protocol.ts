@@ -142,6 +142,13 @@ export function parseClientMessage(raw: string): ClientMessage {
       }
       return { type, requestId: id, targetId: entityId(input, "targetId", id), choice: input.choice };
     }
+    case "explain_vote":
+      return {
+        type,
+        requestId: id,
+        targetId: entityId(input, "targetId", id),
+        rationale: string(input, "rationale", 240, id),
+      };
     case "request_confirm":
       return { type, requestId: id, mitigationId: entityId(input, "mitigationId", id) };
     case "apply":

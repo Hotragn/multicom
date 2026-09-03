@@ -106,6 +106,19 @@ export const TOOL_INPUT_SCHEMAS: Record<ToolName, JsonSchema> = {
     required: ["targetId", "choice"],
     additionalProperties: false,
   },
+  explain_vote: {
+    type: "object",
+    properties: {
+      targetId: ID_SCHEMA,
+      rationale: {
+        type: "string",
+        minLength: 1,
+        maxLength: TOOL_INPUT_LIMITS.rationale,
+      },
+    },
+    required: ["targetId", "rationale"],
+    additionalProperties: false,
+  },
   request_human_confirm: {
     type: "object",
     properties: { mitigationId: ID_SCHEMA },
@@ -179,6 +192,11 @@ async function executeTool<K extends ToolName>(
       case "vote": {
         const params = input as ToolParams["vote"];
         result = await client.vote(params.targetId, params.choice);
+        break;
+      }
+      case "explain_vote": {
+        const params = input as ToolParams["explain_vote"];
+        result = await client.explainVote(params.targetId, params.rationale);
         break;
       }
       case "request_human_confirm": {

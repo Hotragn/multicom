@@ -116,6 +116,16 @@ function isVoteRecord(value: unknown): value is Record<string, VoteChoice> {
   );
 }
 
+// Rationales are peer-authored prose, so they get the same bounded treatment
+// as every other untrusted string that reaches the page.
+function isRationaleRecord(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value) || Object.keys(value).length > 12) return false;
+  return Object.entries(value).every(
+    ([memberId, text]) => isId(memberId) && isBoundedString(text, 240),
+  );
+}
+
 function isServiceStatus(value: unknown): value is ServiceStatus {
   if (!isRecord(value) || !isFiniteNumber(value.errorRate) || !isFiniteNumber(value.p99ms)) return false;
   if (!isBoundedString(value.currentDeploy, 120) || !isRecord(value.flagStates)) return false;
@@ -137,12 +147,13 @@ function isRoomState(value: unknown): value is RoomState {
     isFiniteNumber(hypothesis.confidence) && hypothesis.confidence >= 0 && hypothesis.confidence <= 1 &&
     Array.isArray(hypothesis.rebuttals) && hypothesis.rebuttals.length <= 10 && hypothesis.rebuttals.every((rebuttal) =>
       isRecord(rebuttal) && isId(rebuttal.by) && isBoundedString(rebuttal.evidence, 400)
-    ) && isVoteRecord(hypothesis.votes)
+    ) && isVoteRecord(hypothesis.votes) && isRationaleRecord(hypothesis.rationales)
   )) return false;
   if (!Array.isArray(value.mitigations) || value.mitigations.length > 3 || !value.mitigations.every((mitigation) =>
     isRecord(mitigation) && isId(mitigation.id) && isId(mitigation.hypothesisId) &&
     typeof mitigation.actionId === "string" && (ACTION_LIBRARY as readonly string[]).includes(mitigation.actionId) &&
     isBoundedString(mitigation.blastRadius, 200) && isVoteRecord(mitigation.votes) &&
+    isRationaleRecord(mitigation.rationales) &&
     typeof mitigation.passed === "boolean"
   )) return false;
   if (!Array.isArray(value.appliedActions) || value.appliedActions.length > ACTION_LIBRARY.length || !value.appliedActions.every((action) =>
@@ -182,6 +193,7 @@ function isToolResultData(value: unknown): value is ToolResultData {
     case "counter": return isId(value.hypothesisId);
     case "mitigation": return isId(value.mitigationId);
     case "vote": return isFiniteNumber(value.yes) && isFiniteNumber(value.no) && typeof value.passed === "boolean";
+    case "rationale": return isId(value.targetId) && isFiniteNumber(value.count);
     case "confirm": return typeof value.approved === "boolean";
     case "apply": return typeof value.applied === "boolean" && isServiceStatus(value.status);
     default: return false;
@@ -440,6 +452,18 @@ export class RoomClient {
         blastRadius,
       }),
       "mitigation",
+      signal,
+    );
+  }
+
+  async explainVote(
+    targetId: string,
+    rationale: string,
+    signal?: AbortSignal,
+  ): Promise<ToolResultData> {
+    return this.request(
+      (requestId) => ({ type: "explain_vote", requestId, targetId, rationale }),
+      "rationale",
       signal,
     );
   }

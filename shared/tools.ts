@@ -8,6 +8,7 @@ export const TOOL_NAMES = [
   "counter_hypothesis",
   "propose_mitigation",
   "vote",
+  "explain_vote",
   "request_human_confirm",
   "apply_mitigation",
 ] as const;
@@ -58,6 +59,7 @@ export interface ToolParams {
     blastRadius: string;
   };
   vote: { targetId: string; choice: VoteChoice };
+  explain_vote: { targetId: string; rationale: string };
   request_human_confirm: { mitigationId: string };
   apply_mitigation: { actionId: ActionId };
 }
@@ -72,6 +74,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   counter_hypothesis: "Challenge a hypothesis with specific contradicting evidence.",
   propose_mitigation: "Propose an allowed mitigation and state its possible blast radius.",
   vote: "Vote yes or no on a hypothesis or mitigation.",
+  explain_vote: "Say why you voted as you did, so others can weigh the objection.",
   request_human_confirm: "Ask the human commander to approve a passed mitigation by id.",
   apply_mitigation: "Apply a passed mitigation the commander approved in the last 60 seconds.",
 };

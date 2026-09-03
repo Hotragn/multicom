@@ -104,7 +104,7 @@ test("registers the exact WebMCP surface once with bounded descriptions", async 
   })));
 
   expect(tools.map((tool) => tool.name)).toEqual([...TOOL_NAMES]);
-  expect(tools).toHaveLength(11);
+  expect(tools).toHaveLength(12);
   expect(tools.every((tool) => tool.description.length < 120)).toBe(true);
   expect(tools.find((tool) => tool.name === "query_logs")?.annotations).toMatchObject({
     readOnlyHint: true,
@@ -387,6 +387,63 @@ test("restarts a spent demo room so the next visitor gets a live incident", asyn
     });
     expect(reopened.kind).toBe("hypothesis");
   } finally {
+    await second.close();
+  }
+});
+
+test("carries a vote rationale to the other browser and only after a vote", async ({ browser }) => {
+  const first = await browser.newContext();
+  const second = await browser.newContext();
+  try {
+    const commander = await newRoomPage(first, "rationale", false, true);
+    const responder = await newRoomPage(second, "rationale");
+    await join(commander, "Priya", "commander");
+    await join(responder, "Arjun", "responder");
+    const hypothesisId = await hypothesis(responder);
+    const mitigationId = await mitigation(responder, hypothesisId, "rollback:deploy-1f3a");
+
+    // A rationale explains a vote, so it needs a vote to explain. Otherwise
+    // this is a general message channel rather than a narrow tool.
+    const orphan = await callTool<ToolFailure>(responder, "explain_vote", {
+      targetId: mitigationId,
+      rationale: "Objecting before voting should not be possible.",
+    });
+    expect(orphan.error.code).toBe("no_vote");
+
+    const missing = await callTool<ToolFailure>(responder, "explain_vote", {
+      targetId: "h999",
+      rationale: "There is no such target.",
+    });
+    expect(missing.error.code).toBe("not_found");
+
+    // The objection the drill could not record: a no vote, with a reason.
+    await callTool(responder, "vote", { targetId: mitigationId, choice: "no" });
+    const hostile = '<img src=x onerror="window.__xssExecuted=1"> rollback leaves the pool at one';
+    await commander.evaluate(() => { window.__xssExecuted = 0; });
+    const recorded = await callTool<ToolData>(responder, "explain_vote", {
+      targetId: mitigationId,
+      rationale: hostile,
+    });
+    expect(recorded).toMatchObject({ kind: "rationale", targetId: mitigationId, count: 1 });
+
+    // It reaches the other browser, and stays literal text there.
+    const reasons = commander.getByTestId("vote-rationales");
+    await expect(reasons).toBeVisible();
+    await reasons.getByText("stated reason").click();
+    await expect(commander.getByText(hostile)).toBeVisible();
+    expect(await commander.locator('[data-testid="vote-rationales"] img').count()).toBe(0);
+    expect(await commander.evaluate(() => window.__xssExecuted)).toBe(0);
+    await expect(commander.getByTestId("vote-rationales")).toContainText("Arjun voted no");
+
+    // One standing reason per member: explaining again replaces it.
+    const replaced = await callTool<ToolData>(responder, "explain_vote", {
+      targetId: mitigationId,
+      rationale: "Rollback does not restore DB_POOL_MAX, so errors persist.",
+    });
+    expect(replaced).toMatchObject({ kind: "rationale", count: 1 });
+    await expect(commander.getByTestId("vote-rationales")).toContainText("does not restore DB_POOL_MAX");
+  } finally {
+    await first.close();
     await second.close();
   }
 });

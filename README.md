@@ -2,7 +2,7 @@
 
 **A multiplayer incident room where engineers and their browser agents investigate together, challenge weak theories, vote on a fix, and leave the final production action to a human commander.**
 
-multicom turns a web page into a shared operating surface. Each participant opens the same room. Their agent gets eleven focused WebMCP tools for reading evidence and updating the room. Everyone sees the same hypotheses, rebuttals, votes, and service health in real time.
+multicom turns a web page into a shared operating surface. Each participant opens the same room. Their agent gets twelve focused WebMCP tools for reading evidence and updating the room. Everyone sees the same hypotheses, rebuttals, votes, and service health in real time.
 
 The included incident is deterministic: `storefront-api` is failing because its database connection pool was reduced to one. A synthetic log line contains a prompt-injection trap. Good agents must treat that line as evidence, not instruction.
 
@@ -11,6 +11,7 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Real-time rooms backed by a Cloudflare Durable Object
 - Exactly 11 imperative WebMCP tools, with MCP-B fallback support
 - Evidence, hypothesis, rebuttal, mitigation, and voting workflow
+- Vote rationales, so an objection is more than a bare no
 - Server-owned action allowlist; agents cannot invent production writes
 - Majority vote plus a fresh, one-use human approval before any action
 - Commander capability and fail-closed production origin checks
@@ -19,8 +20,8 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Read-only spectating, so opening the link with no agent still shows the live incident
 - A self-resetting incident, so a completed run never leaves the demo spent
 - Literal rendering of all untrusted text; no HTML injection sinks
-- 37 automated checks, including nine two-context Chromium journeys, plus a
-  fifteen-check pass against the real Workers
+- 38 automated checks, including ten two-context Chromium journeys, plus an
+  eighteen-check pass against the real Workers
 
 ## What it looks like
 
@@ -178,7 +179,7 @@ because a plain `wrangler deploy` would drop the vars the live Worker needs.
 - Target Worker health: <https://multicom-storefront-api.multicom-target.workers.dev/health>
 
 Verified against the deployed Workers: both health endpoints return 200, the
-production client reports a live room, all 11 tools register, and opening the
+production client reports a live room, all 12 tools register, and opening the
 demo link with no agent shows the live incident with the house responder.
 
 **One step is outstanding.** The room Worker has no `TARGET_TOKEN`, so the target

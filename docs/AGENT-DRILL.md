@@ -43,10 +43,10 @@ The same real Workers, driven without agents, as a repeatable gate:
 node tools/live-acceptance.mjs --commander "$COMMANDER_TOKEN"
 ```
 
-Fifteen checks: registration, refusal before joining, the commander seat, the
-untrusted trap line, the fault, the vote gate, invented actions, the approval
-gate, the dialog naming a server-derived action, a real click on the real
-dialog, apply against the real target, single-use approval, and recovery in
+Eighteen checks: registration, refusal before joining, the commander seat, the
+untrusted trap line, the fault, the vote gate, invented actions, vote rationales,
+the approval gate, the dialog naming a server-derived action, a real click on the
+real dialog, apply against the real target, single-use approval, and recovery in
 every connected browser. It re-arms the fault first, because the scripted
 incident is one global state and a previous run leaves the service healthy.
 
@@ -84,6 +84,7 @@ approval is the right bound on it.
 | A bare `approved: false` could not distinguish a commander's refusal from nobody answering, so an agent could abandon a correct fix | `ToolResultData` carries `reason: "granted" \| "rejected" \| "expired"` |
 | A target answering 403 was reported to the agent as "did not respond", sending an operator after a network fault instead of a missing token | Distinguished as `target_forbidden`, naming `TARGET_TOKEN` |
 | A failed apply leaves the approval spent, but the message said "try again", which loops into `needs_human_confirm` | The message now says a fresh approval is required |
+| Agents had no way to say *why* they objected, so both pushed prose into `blastRadius` and one filed a `RULED OUT:` hypothesis to get its reasoning on the board | Added `explain_vote`, a twelfth tool |
 
 Three complaints did not survive checking, and are recorded so nobody re-fixes
 them:
@@ -97,13 +98,33 @@ them:
 - *"The evidence length cap is only discoverable by rejection."* The input
   schema carries `maxLength`; the agent overlooked it.
 
+## The twelfth tool
+
+The drill's clearest gap was that an agent could vote no and had no way to say
+why. `vote` took no rationale and `counter_hypothesis` only ever targeted a
+hypothesis, so an objection to a mitigation landed on the board as a bare "no" —
+the weakest possible form of the disagreement the agents had been asked to voice.
+Both worked around it: one stuffed its injection warning into `blastRadius`, the
+other filed a `RULED OUT: ...` hypothesis purely as a place to write.
+
+`explain_vote` closes it. It takes a `targetId` and a rationale of up to 240
+characters, and it refuses with `no_vote` unless you have already voted on that
+target. That refusal is the point: a rationale attaches to a vote, so the tool
+stays one narrow job rather than becoming a general chat channel inside an
+incident room. One standing reason per member per target, replaced if you
+explain again. The room renders them next to the tally as text nodes, like every
+other peer-authored string.
+
+SPEC.md acceptance criterion 7 moved from eleven tools to twelve, with the
+reason recorded there.
+
 ## Still open
 
-Agents have no way to say *why* they disagree. `vote` takes no rationale and
-`counter_hypothesis` only targets a hypothesis, so both agents pushed prose into
-`blastRadius` and one filed a `RULED OUT: ...` hypothesis purely to get its
-reasoning on the board. Closing this means either a twelfth tool or a rationale
-field, and SPEC.md pins the surface at eleven tools, so it is a deliberate
-decision rather than an oversight.
+`query_logs` treats `15m` and `1h` as the same window.
 
-`query_logs` also treats `15m` and `1h` as the same window.
+The Playwright harness does not write activity entries for votes or vote
+rationales, while the room Worker does — visible in the drill transcript as
+`Arjun-assistant voted no on rollback:deploy-1f3a.` So the activity panel in
+screenshots taken through the harness is shorter than the real one. The
+divergence predates `explain_vote` and is a test-double gap, not a product one;
+`tools/live-acceptance.mjs` exercises the real Worker path.

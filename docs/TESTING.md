@@ -12,13 +12,13 @@ It runs in this order and stops on the first failure:
 2. UI formatting tests.
 3. WebMCP definition, validation, output-budget, registration, correlation, and malformed-message tests.
 4. Room voting/protocol and target scenario tests.
-5. Nine Chromium acceptance journeys.
+5. Ten Chromium acceptance journeys.
 
 ## Browser coverage
 
 | Behavior | Automated proof |
 | --- | --- |
-| Exact WebMCP surface | 11 tools, bounded descriptions, annotations, no iframe |
+| Exact WebMCP surface | 12 tools, bounded descriptions, annotations, no iframe |
 | Real-time room | Hypothesis reaches a second browser context in under 300 ms |
 | Untrusted logs | Injection trap stays literal and below 2 KB |
 | Safe rendering | Hostile `<img onerror>` text creates no image and runs no script |
@@ -27,6 +27,7 @@ It runs in this order and stops on the first failure:
 | Demo mode | House responder joins within 3 seconds, proposes by 10 seconds, then counters weak evidence |
 | Spectating | A page that never joins still gets live metrics, the house hypothesis, a watching notice, and no write access |
 | Self-reset | A resolved demo room restarts for the next visitor, and the target re-arms a completed run on its own |
+| Vote rationale | `explain_vote` refuses without a vote, reaches the other browser, renders hostile text literally, and replaces rather than accumulates |
 | Limits | Commander capability, six-person capacity, five hypotheses, malformed/oversized messages |
 | Idempotency | Replaying one mutation request ID creates one hypothesis |
 
@@ -48,7 +49,7 @@ the actual deployed Workers:
 - [ ] Opening the demo link with no agent shows live metrics and the house responder.
 - [ ] A responder cannot claim commander without the capability.
 - [ ] Two separate browser sessions join the same room.
-- [ ] The agent can call all 11 tools through the real browser WebMCP surface.
+- [ ] The agent can call all 12 tools through the real browser WebMCP surface.
 - [ ] A hypothesis appears in both sessions promptly.
 - [ ] The injection-trap log stays literal.
 - [ ] Apply fails before vote and approval.
@@ -69,7 +70,7 @@ Verified against the deployed Workers on September 3, 2026:
 
 - Both health endpoints return 200.
 - A production `wss://` client joins and the browser reports `Room connection: Live`.
-- `navigator.modelContext.getTools()` returns exactly 11 tools, longest description 74 characters.
+- `navigator.modelContext.getTools()` returns exactly 12 tools, longest description under 120 characters.
 - Opening `?demo=1` with no agent shows live metrics, the house responder, and the watching notice.
 - A stale demo room restarts on arrival: MTTR returned to 0:18 from 98:49.
 
@@ -87,7 +88,7 @@ end-to-end pass:
 node tools/live-acceptance.mjs --commander "$COMMANDER_TOKEN"
 ```
 
-Fifteen checks, ending in a real click on the real approval dialog, an apply
+Eighteen checks, ending in a real click on the real approval dialog, an apply
 against the real target, and recovery in all three connected browsers. It re-arms
 the fault first so it is repeatable. Use `--app` and `--target` for a deployed
 build.

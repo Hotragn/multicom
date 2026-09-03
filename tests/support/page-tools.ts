@@ -27,7 +27,7 @@ export async function installWebMcpCapture(page: Page): Promise<void> {
 }
 
 export async function waitForTools(page: Page): Promise<void> {
-  await expect.poll(() => page.evaluate(() => Object.keys(window.__multicomTools ?? {}).length)).toBe(11);
+  await expect.poll(() => page.evaluate(() => Object.keys(window.__multicomTools ?? {}).length)).toBe(12);
 }
 
 export async function callTool<T = unknown>(page: Page, name: string, input: unknown): Promise<T> {

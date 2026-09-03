@@ -16,7 +16,7 @@ Show the critical status header. Say: “Production is down. Three engineers, th
 
 **0:08–0:22 — Native agent access**
 
-Show two agents calling `join_room` and `get_service_status`. Briefly reveal the browser's registered WebMCP tools. Say: “The page exposes eleven narrow tools. No copy-paste and no hidden backend integration.”
+Show two agents calling `join_room` and `get_service_status`. Briefly reveal the browser's registered WebMCP tools. Say: “The page exposes twelve narrow tools. No copy-paste and no hidden backend integration.”
 
 **0:22–0:48 — Evidence and disagreement**
 
@@ -41,4 +41,4 @@ Show the resolved summary and activity history. Say: “multicom: a multiplayer 
 - Literal injection-trap log output
 - Passed mitigation and human confirmation dialog
 - Resolved state in both sessions
-- Browser tool list showing exactly 11 tools
+- Browser tool list showing exactly 12 tools

@@ -513,8 +513,42 @@ function renderHypothesis(room: RoomState, hypothesis: Hypothesis): HTMLLIElemen
     card.append(rebuttals);
   }
 
+  const reasons = renderRationales(room, hypothesis.votes, hypothesis.rationales, hypothesis.title);
+  if (reasons) card.append(reasons);
+
   item.append(card);
   return item;
+}
+
+// A bare yes/no hides the argument. Show the stated reasons next to the tally,
+// as text nodes, since every word here is peer-authored.
+function renderRationales(
+  room: RoomState,
+  votes: Record<string, VoteChoice>,
+  rationales: Record<string, string> | undefined,
+  label: string,
+): HTMLElement | null {
+  const entries = Object.entries(rationales ?? {}).filter(([memberId]) => votes[memberId]);
+  if (entries.length === 0) return null;
+  const block = element("details", "mc-rationales");
+  block.dataset.testid = "vote-rationales";
+  const summary = textElement(
+    "summary",
+    "mc-rationales__summary",
+    entries.length === 1 ? `Read 1 stated reason` : `Read ${entries.length} stated reasons`,
+  );
+  summary.setAttribute("aria-label", `${entries.length} stated reasons on ${label}`);
+  const list = element("ul", "mc-rationales__list");
+  for (const [memberId, text] of entries) {
+    const row = element("li", "mc-rationale");
+    row.append(
+      textElement("p", "mc-rationale__author", `${memberName(room, memberId)} voted ${votes[memberId]}`),
+    );
+    row.append(textElement("p", "mc-rationale__text", text));
+    list.append(row);
+  }
+  block.append(summary, list);
+  return block;
 }
 
 function renderHypotheses(model: UiModel, refs: ShellRefs): void {
@@ -613,6 +647,8 @@ function renderMitigation(
   }
 
   card.append(header, summary, blastRadius, voteArea);
+  const reasons = renderRationales(room, mitigation.votes, mitigation.rationales, mitigation.actionId);
+  if (reasons) card.append(reasons);
   item.append(card);
   return item;
 }

@@ -6,7 +6,7 @@ This is working copy for the project page. Replace every `TODO` only with verifi
 
 **How does your project use WebMCP?**
 
-The room page registers eleven imperative WebMCP tools after load, feature-detecting `navigator.modelContext` then `document.modelContext`. They cover service status, checks, logs, hypotheses, rebuttals, mitigations, votes, and human confirmation. Every call travels the room's WebSocket with a request ID, and the server owns voting, approval, and idempotency. Log results are marked untrusted, and every result stays under 2 KB.
+The room page registers twelve imperative WebMCP tools after load, feature-detecting `navigator.modelContext` then `document.modelContext`. They cover service status, checks, logs, hypotheses, rebuttals, mitigations, votes with rationales, and human confirmation. Every call travels the room's WebSocket with a request ID, and the server owns voting, approval, and idempotency. Log results are marked untrusted, and every result stays under 2 KB.
 
 **Why is this a better user experience?**
 
@@ -46,7 +46,7 @@ WebMCP is not an add-on to the demo; it is the product boundary. The same page e
 
 ## Key features
 
-- Live multi-person room with evidence-backed hypotheses and rebuttals
+- Live multi-person room with evidence-backed hypotheses, rebuttals, and vote rationales
 - Clear mitigation vote with active-member majority rules
 - Human-only, server-derived confirmation with 60-second expiry
 - Fixed server-side action library and protected target service
@@ -66,7 +66,7 @@ Codex helped turn the initial specification into frozen shared contracts, then b
 
 ## Testing
 
-Run `npm test`. The command checks TypeScript and 37 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, six target tests, and nine Chromium journeys. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
+Run `npm test`. The command checks TypeScript and 38 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, six target tests, and ten Chromium journeys. A further eighteen checks run against the real Workers via `tools/live-acceptance.mjs`. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
 
 ## Judging fit
 
@@ -101,9 +101,11 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 | 6 | `06-untrusted-text-literal.png` | The injection-trap log line rendered as literal text |
 | 7 | `07-mobile-room.png` | The room at 390 px |
 | 8 | `08-judge-cold-open.png` | What a visitor sees with no agent attached: live metrics, the house responder's theory, and the watching notice |
+| 9 | `09-live-production.png` | The deployed build serving the same cold open |
+| 10 | `10-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
 
 One shot still needs a live capture by hand, because it exists only in the agent
-client rather than in the page: the browser WebMCP tool list showing all eleven
+client rather than in the page: the browser WebMCP tool list showing all twelve
 tools in ChatGPT desktop.
 
 ## Known limitations

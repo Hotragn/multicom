@@ -16,6 +16,7 @@ const LIMITS = {
   filter: 100,
   id: 64,
   blastRadius: 200,
+  rationale: 240,
 } as const;
 
 type UnknownRecord = Record<string, unknown>;
@@ -174,6 +175,13 @@ export function validateToolInput<K extends ToolName>(
       return {
         targetId: idValue(args, "targetId"),
         choice: enumValue(args, "choice", ["yes", "no"] as const),
+      } as ToolParams[K];
+    }
+    case "explain_vote": {
+      exactKeys(args, ["targetId", "rationale"]);
+      return {
+        targetId: idValue(args, "targetId"),
+        rationale: stringValue(args, "rationale", LIMITS.rationale),
       } as ToolParams[K];
     }
     case "request_human_confirm": {

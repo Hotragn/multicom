@@ -10,7 +10,7 @@ import type {
   ServiceStatus,
   ToolResultData,
 } from "../../shared/ws-messages";
-import { activeMemberIds, recomputeMitigations, tally } from "../../worker/src/domain";
+import { activeMemberIds, recomputeMitigations, tally, truncate } from "../../worker/src/domain";
 import { parseClientMessage, ProtocolError } from "../../worker/src/protocol";
 import {
   checkAt,
@@ -218,6 +218,9 @@ class HarnessRoom {
       case "vote":
         this.vote(peer, message.requestId, message.targetId, message.choice);
         return;
+      case "explain_vote":
+        this.explainVote(peer, message.requestId, message.targetId, message.rationale);
+        return;
       case "request_confirm":
         this.requestConfirm(peer, message.requestId, message.mitigationId);
         return;
@@ -261,6 +264,7 @@ class HarnessRoom {
       confidence: message.confidence,
       rebuttals: [],
       votes: {},
+      rationales: {},
     });
     if (this.state.phase === "triage") this.state.phase = "diagnosing";
     this.activity(`${this.name(peer)} proposed ${message.title}.`);
@@ -285,7 +289,7 @@ class HarnessRoom {
     if (this.state.mitigations.length >= 3) return this.error(peer, requestId, "board_full", "Vote on the existing mitigations.");
     if (this.state.mitigations.some((item) => item.actionId === rawActionId)) return this.error(peer, requestId, "duplicate_action", "Action already proposed.");
     const id = `fix${this.nextMitigation++}`;
-    this.state.mitigations.push({ id, hypothesisId, actionId: rawActionId, blastRadius, votes: {}, passed: false });
+    this.state.mitigations.push({ id, hypothesisId, actionId: rawActionId, blastRadius, votes: {}, rationales: {}, passed: false });
     this.state.phase = "mitigating";
     this.activity(`${this.name(peer)} proposed ${rawActionId}.`);
     this.broadcastState();
@@ -310,6 +314,26 @@ class HarnessRoom {
     const counts = tally(mitigation.votes, activeMemberIds(this.state));
     this.broadcastState();
     this.result(peer, requestId, { kind: "vote", ...counts, passed: mitigation.passed });
+  }
+
+  private explainVote(peer: Peer, requestId: string, targetId: string, rationale: string): void {
+    if (!this.mutable(peer, requestId)) return;
+    const text = rationale.trim();
+    if (!text) return this.error(peer, requestId, "invalid_request", "A rationale cannot be empty.");
+    const target =
+      this.state.hypotheses.find((item) => item.id === targetId) ??
+      this.state.mitigations.find((item) => item.id === targetId);
+    if (!target) return this.error(peer, requestId, "not_found", "Vote target not found.");
+    if (!target.votes[peer.memberId!]) {
+      return this.error(peer, requestId, "no_vote", "Vote on this first, then explain the vote.");
+    }
+    target.rationales[peer.memberId!] = truncate(text, 240);
+    this.broadcastState();
+    this.result(peer, requestId, {
+      kind: "rationale",
+      targetId,
+      count: Object.keys(target.rationales).length,
+    });
   }
 
   private requestConfirm(peer: Peer, requestId: string, mitigationId: string): void {

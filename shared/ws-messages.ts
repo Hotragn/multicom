@@ -19,6 +19,11 @@ export interface Rebuttal {
   evidence: string;
 }
 
+// Keyed by member id, like votes: one standing reason per member per target.
+// A bare yes/no is the weakest form of a disagreement, and an agent that
+// objects to a mitigation has no other way to say why.
+export type VoteRationales = Record<string, string>;
+
 export interface Hypothesis {
   id: string;
   by: string;
@@ -27,6 +32,7 @@ export interface Hypothesis {
   confidence: number;
   rebuttals: Rebuttal[];
   votes: Record<string, VoteChoice>;
+  rationales: VoteRationales;
 }
 
 export interface Mitigation {
@@ -35,6 +41,7 @@ export interface Mitigation {
   actionId: ActionId;
   blastRadius: string;
   votes: Record<string, VoteChoice>;
+  rationales: VoteRationales;
   passed: boolean;
 }
 
@@ -73,6 +80,7 @@ export type ClientMessage =
   | { type: "counter"; requestId: string; hypothesisId: string; evidence: string }
   | { type: "propose_mitigation"; requestId: string; hypothesisId: string; actionId: ActionId; blastRadius: string }
   | { type: "vote"; requestId: string; targetId: string; choice: VoteChoice }
+  | { type: "explain_vote"; requestId: string; targetId: string; rationale: string }
   | { type: "request_confirm"; requestId: string; mitigationId: string }
   | { type: "confirm"; confirmationId: string; approved: boolean }
   | { type: "apply"; requestId: string; actionId: ActionId };
@@ -92,6 +100,7 @@ export type ToolResultData =
   | { kind: "counter"; hypothesisId: string }
   | { kind: "mitigation"; mitigationId: string }
   | { kind: "vote"; yes: number; no: number; passed: boolean }
+  | { kind: "rationale"; targetId: string; count: number }
   | { kind: "confirm"; approved: boolean; reason: ConfirmOutcome }
   | { kind: "apply"; applied: boolean; status: ServiceStatus };
 
