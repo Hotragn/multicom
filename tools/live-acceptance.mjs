@@ -102,6 +102,22 @@ const joins = await Promise.all([
   call(alice, "join_room", { name: "Arjun", role: "responder" }),
   call(bob, "join_room", { name: "Mei", role: "responder" }),
 ]);
+// A supplied capability that the room rejects is a setup problem, not a
+// product failure. Say so once instead of cascading it through every
+// commander-dependent check below.
+const commanderJoin = joins[0];
+if (canCommand && commanderJoin?.error) {
+  console.log(`
+The commander capability was rejected: ${commanderJoin.error.code}.`);
+  if (commanderJoin.error.code === "commander_forbidden") {
+    console.log("COMMANDER_TOKEN does not match the value on the deployed room Worker.");
+    console.log("Check for a stale value in this shell, or rotate: npm run token:commander");
+  } else if (commanderJoin.error.code === "commander_taken") {
+    console.log("Another commander is already active in this room. Retry in a moment.");
+  }
+  await browser.close();
+  process.exit(1);
+}
 check("three members joined the real Durable Object", joins.every((j) => j.memberId), joins.map((j) => j.memberId ?? j.error?.code).join(","));
 
 // A responder must not be able to claim the seat that gates approval.
