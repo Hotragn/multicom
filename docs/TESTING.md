@@ -238,9 +238,18 @@ for the status cadence so the gauge has a real reading, and the judge-console
 shot is taken after a complete run so the rubric is filled by events rather than
 staged.
 
-`09-live-production.png` and `11-real-chrome.png` are captured by hand rather
-than regenerated — they are evidence of the deployed build and of native Chrome
-registration, not product shots.
+`evidence-live-production.png` and `evidence-real-chrome.png` sit outside the
+numbered sequence: they evidence the deployed build and native Chrome
+registration rather than being product shots. Each has a command, because a
+screenshot captioned "the deployed build" goes on claiming that after the next
+deploy:
+
+```bash
+node tools/capture-production.mjs
+```
+
+That one refuses to write a file unless the live page actually shows a fault, so
+it cannot quietly capture a page that never connected.
 
 ## Manual browser checks
 

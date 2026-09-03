@@ -105,9 +105,19 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 | 10 | `10-mobile.png` | The room at 390 px, where the layout becomes tabbed rather than stacked |
 | 11 | `11-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
 
-Two files are captured by hand rather than regenerated, and predate the
-interface rework: `09-live-production.png` (the deployed build) and
-`11-real-chrome.png` (the deployed room in Chrome with native WebMCP enabled).
+Two more are evidence rather than walkthrough steps, so they sit outside the
+numbered sequence and each regenerates from its own tool:
+
+| File | What it evidences | Regenerate with |
+| --- | --- | --- |
+| `evidence-live-production.png` | The deployed site, photographed live, with a real fault on screen | `node tools/capture-production.mjs` |
+| `evidence-real-chrome.png` | The deployed room in Chrome with native WebMCP enabled | `npm run webmcp:chrome` |
+
+Both were previously numbered `09-` and `11-`, which collided with walkthrough
+shots and made the set look like it had two ninths. They are also the two files
+that go stale silently: a screenshot captioned "the deployed build" keeps making
+that claim after the next deploy, which is why each now has a command that
+recaptures it rather than being taken by hand.
 
 The twelfth-tool surface is evidenced by `docs/webmcp-chrome-report.json`
 rather than a screenshot of a client menu: it records the tool names, the
