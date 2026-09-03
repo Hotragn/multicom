@@ -2,6 +2,26 @@
 
 This is working copy for the project page. Replace every `TODO` only with verified public links or recorded assets.
 
+## Devpost field copy (final — paste into the four required fields)
+
+**How does your project use WebMCP?**
+
+The room page registers eleven imperative WebMCP tools after load, feature-detecting `navigator.modelContext` then `document.modelContext`. They cover service status, checks, logs, hypotheses, rebuttals, mitigations, votes, and human confirmation. Every call travels the room's WebSocket with a request ID, and the server owns voting, approval, and idempotency. Log results are marked untrusted, and every result stays under 2 KB.
+
+**Why is this a better user experience?**
+
+Incident response is already collaborative, but AI help is usually one agent in one private chat. Evidence gets pasted between tabs, weak theories go unchallenged, and the person accountable for production cannot see what an agent intends to change. Here the page the engineers read is the same surface their agents act on, so reasoning, disagreement, and the pending write stay visible to the whole room.
+
+**What can people and agents do together now that they could not before?**
+
+Several engineers' agents can investigate one live incident in one shared page, cite evidence, and argue against each other's theories — then a server-counted majority plus one fresh human approval decides the fix. A planted log line instructs agents to skip diagnosis and roll back immediately. It stays literal, is marked untrusted, and no agent obeys it.
+
+**How did you implement WebMCP?**
+
+A static TypeScript and Vite client registers the surface once, with an MCP-B fallback and no iframes. A Cloudflare Worker maps each room to one Durable Object that holds presence, boards, votes, approvals, and replay protection. A second Worker runs the scripted storefront fault and accepts only three known action IDs behind a bearer token. Approval text is server-derived, expires in 60 seconds, and is consumed before the target is called.
+
+Everything below is supporting working copy for the rest of the project page.
+
 ## Title
 
 multicom
@@ -65,13 +85,24 @@ Run `npm test`. The command checks TypeScript and 34 automated behaviors: two UI
 - Public repository: <https://github.com/Hotragn/multicom>
 - Demo video: **TODO — upload the verified under-three-minute cut**
 
-## Screenshot shot list
+## Screenshots
 
-1. Critical room with service metrics and two connected people.
-2. Hypothesis plus evidence and a visible rebuttal.
-3. Passed mitigation with commander confirmation dialog.
-4. Resolved room with green status and stopped MTTR timer.
-5. Browser WebMCP tool list showing all eleven tools.
+Captured from the real interface by `npm run capture:screenshots`, which drives the
+production UI through the room protocol. Files live in `docs/screenshots/`.
+
+| Order | File | Shows |
+| --- | --- | --- |
+| 1 | `01-critical-room.png` | Critical storefront-api room, live metrics, two people joined |
+| 2 | `02-hypothesis-and-rebuttal.png` | Hypothesis with evidence and an expanded rebuttal |
+| 3 | `03-commander-confirmation.png` | Passed mitigation and the commander approval dialog with its 60-second expiry |
+| 4 | `04-resolved-room.png` | Resolved room, green status, stopped MTTR timer, falling p99 trend |
+| 5 | `05-resolved-second-browser.png` | The same resolution in the second browser context |
+| 6 | `06-untrusted-text-literal.png` | The injection-trap log line rendered as literal text |
+| 7 | `07-mobile-room.png` | The room at 390 px |
+
+One shot still needs a live capture by hand, because it exists only in the agent
+client rather than in the page: the browser WebMCP tool list showing all eleven
+tools in ChatGPT desktop.
 
 ## Known limitations
 
@@ -85,6 +116,8 @@ This challenge build ships one scripted incident, capability-link commander acce
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
 - [x] Hosted frontend URL
 - [x] Live browser acceptance pass (room connection live; 11 WebMCP tools visible)
-- [ ] Screenshots
+- [x] Interface screenshots captured and indexed
+- [x] Final Devpost field copy written (252 words, under the 300-word limit)
+- [ ] WebMCP tool-list screenshot from ChatGPT desktop
 - [ ] Public YouTube demo with audio
-- [ ] Final Devpost field copy and verified project page
+- [ ] Devpost project page filled in and verified from a logged-out browser

@@ -15,7 +15,8 @@
     "typecheck": "npm run typecheck --workspace=@multicom/web && npm run typecheck --workspace=@multicom/web-tools && npm run typecheck --workspace=@multicom/worker && npm run typecheck --workspace=@multicom/target && tsc -p tests/tsconfig.json --noEmit",
     "test:unit": "npm run test --workspace=@multicom/web && npm run test --workspace=@multicom/web-tools && npm run test --workspace=@multicom/worker && npm run test --workspace=@multicom/target",
     "test:e2e": "playwright test -c tests/playwright.config.ts",
-    "test": "npm run typecheck && npm run test:unit && npm run test:e2e"
+    "test": "npm run typecheck && npm run test:unit && npm run test:e2e",
+    "capture:screenshots": "playwright test -c tests/playwright.screenshots.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

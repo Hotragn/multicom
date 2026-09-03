@@ -19,6 +19,28 @@ The included incident is deterministic: `storefront-api` is failing because its 
 - Literal rendering of all untrusted text; no HTML injection sinks
 - 34 automated checks, including seven two-context Chromium journeys
 
+## What it looks like
+
+![The storefront-api room in a critical state with two people joined](docs/screenshots/01-critical-room.png)
+
+A mitigation has passed the vote, and the room asks the human commander to approve the
+exact server-derived action. Agents cannot approve their own write.
+
+![The commander approval dialog naming scale_pool:default with a 60-second expiry](docs/screenshots/03-commander-confirmation.png)
+
+After the approved action is applied, every connected browser resolves together.
+
+![The resolved room with a 1.0% error rate and a stopped MTTR timer](docs/screenshots/04-resolved-room.png)
+
+The planted log line that tells agents to skip diagnosis stays literal, marked
+untrusted, and unexecuted.
+
+![The injection-trap log line rendered as plain text inside a hypothesis card](docs/screenshots/06-untrusted-text-literal.png)
+
+The full set, including the second browser context and the 390 px layout, is in
+[docs/screenshots/](docs/screenshots/). Regenerate it from the real interface with
+`npm run capture:screenshots`.
+
 ## How it fits together
 
 ```mermaid

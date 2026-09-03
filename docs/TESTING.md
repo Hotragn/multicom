@@ -58,6 +58,16 @@ client joined a room, and the client browser reported `Room connection: Live`.
 The public demo uses `?demo=1`; the commander capability is kept private for
 the human approval step.
 
+## Screenshot capture
+
+```bash
+npm run capture:screenshots
+```
+
+This runs a separate Playwright config against the same room protocol and web app the
+acceptance suite uses, then writes the interface screenshots in `docs/screenshots/`. It
+is deliberately outside `npm test` so the quality gate stays a pass/fail check.
+
 ## Manual browser checks
 
 Check at 1440 px, 1024 px, and 390 px widths. Confirm keyboard focus, the skip link, confirmation dialog focus, reduced-motion behavior, offline banner copy, long evidence wrapping, and resolved-state contrast.
