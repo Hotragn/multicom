@@ -206,6 +206,11 @@ export function createOnboarding(callbacks: OnboardingCallbacks): OnboardingPane
         scriptedTier.status,
         environment.demo ? "Already running in this room" : "Works in any browser",
       );
+      setText(
+        copyInstruction,
+        commanderTaken ? "Copy responder instruction" : "Copy first instruction",
+      );
+      copyInstruction.prepend(icon("copy"));
 
       ownRoom.hidden = !environment.startOwnRoom || environment.selfServe;
     },

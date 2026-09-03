@@ -10,13 +10,13 @@ It runs in this order and stops on the first failure:
 
 1. TypeScript across five projects — the web app, the WebMCP layer, the room
    Worker, the target Worker, and the browser harness.
-2. 44 unit tests: UI formatting; WebMCP definitions, output envelopes,
+2. 46 unit tests: UI formatting; WebMCP definitions, output envelopes,
    validation, budget, registration, correlation and malformed messages; room
    voting and protocol parsing; room tenancy and target-request headers; target
    scenario maths and tenant routing.
-3. 23 Chromium acceptance journeys.
+3. 25 Chromium acceptance journeys.
 
-67 automated checks in total, plus 32 against real Workers and 34 in the
+71 automated checks in total, plus 32 against real Workers and 34 in the
 multi-agent drill.
 
 ## Browser coverage
@@ -42,7 +42,7 @@ multi-agent drill.
 | **Parameter documentation** | Every parameter of every tool carries prose, and `role`, `actionId`, `choice` and `mitigationId` are asserted to state the specific things two real agents needed and did not have |
 | **No-commander deadlock** | A room of responders refuses approval with a message naming the remedy, and the deadlock is escapable by seating a commander |
 | Demo mode | House responder joins within 3 seconds, proposes by 10 seconds, then counters weak evidence and is marked as the red herring |
-| Spectating | A page that never joins gets live metrics, the house hypothesis, three offered ways in, and no write access |
+| Spectating | A page that never joins gets live metrics — demo and self-serve alike — plus the house hypothesis on demo, three offered ways in, and no write access |
 | Self-reset | A resolved demo room restarts for the next visitor, and the target re-arms a completed run on its own |
 | Vote rationale | `explain_vote` refuses without a vote, reaches the other browser, renders hostile text literally, and replaces rather than accumulates |
 | Limits | Commander capability, six-person capacity, five hypotheses, malformed and oversized messages |

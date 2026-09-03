@@ -42,7 +42,7 @@ The demo incident is a failing storefront API with a one-connection database poo
 
 ## Why WebMCP matters here
 
-WebMCP is not an add-on to the demo; it is the product boundary. The same page engineers use is the surface their agents use. Eleven imperative tools register after page load, work through one shared WebSocket, and return compact structured results. With no extension and no copied credentials, the agent can observe and coordinate inside the current room context.
+WebMCP is not an add-on to the demo; it is the product boundary. The same page engineers use is the surface their agents use. Twelve imperative tools register after page load, work through one shared WebSocket, and return compact structured results. With no extension and no copied credentials, the agent can observe and coordinate inside the current room context.
 
 ## Key features
 
@@ -66,7 +66,7 @@ Codex helped turn the initial specification into frozen shared contracts, then b
 
 ## Testing
 
-Run `npm test`. The command checks TypeScript and 38 automated behaviors: two UI tests, 15 WebMCP/client tests, five room tests, six target tests, and ten Chromium journeys. A further eighteen checks run against the real Workers via `tools/live-acceptance.mjs`. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room limits, demo mode, and recovery in every tab.
+Run `npm test`. The command checks TypeScript and 71 automated behaviors: 46 unit tests across the UI, WebMCP client, room, and target, then 25 Chromium journeys. A further 32 checks run against the real Workers via `tools/live-acceptance.mjs`. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room isolation, self-serve commander, demo mode, and recovery in every tab.
 
 ## Judging fit
 
@@ -132,7 +132,7 @@ Two limitations from the earlier build are now fixed rather than documented. The
 
 ## Readiness
 
-- [x] Functional project and automated test suite (67 checks)
+- [x] Functional project and automated test suite (71 checks)
 - [x] MIT license and public repository remote
 - [x] Professional README, security notes, and demo plan
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
