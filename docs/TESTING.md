@@ -107,6 +107,30 @@ mode the token comes from `--commander`, then `.commander-token`, then
 room shares one scenario by design. Without `--room` no token is read at all —
 a `.commander-token` on disk must not silently change what is being tested.
 
+### Verified against production, 2026-09-03
+
+Room Worker `77a76fa0`, target `01495519`, Pages serving `index-DH4vJj84.js`.
+Everything below ran against `https://multicom-web.pages.dev` and the deployed
+Workers, with no secret supplied anywhere.
+
+| Pass | Result |
+| --- | --- |
+| `npm run smoke:prod` | 9/9 — twelve tools, live `wss`, real fault metrics, `data-viz=webgl`, onboarding tiers, lobby at the bare URL, no console errors |
+| `npm run verify:prod` | **32/32, no skips** — including the commander seat claimed with no capability, a real click on the real overlay, and single-use approval |
+| `npm run drill` | **34/34** — three concurrent browsers, red herring rebutted, 3-0 vote, human approval, recovery in all three at 1.0% in 6.4s |
+| `npm run webmcp:chrome` | 12 tools native, `viaPolyfill: false`, 20 of 20 parameter descriptions, longest description 104 chars |
+
+The tenancy fix is what these establish that no harness could. In the
+live-acceptance run the worked room recovered to **1.0%** while a bystander room
+provisioned moments earlier still read **23.0%**; the drill repeated it with a
+third room. Before this rework both rooms would have read 1.0%, because one
+global scenario object served every room.
+
+Two operational notes from the deploy, in [DEPLOY.md](DEPLOY.md): run the Pages
+step from the repo root, and do not exercise the provisioning rate limit before
+verifying — 30 test mints lock out `verify:prod` and `drill` for the rest of the
+ten-minute window, because both provision through the lobby.
+
 ## The multi-agent drill
 
 ```bash
@@ -157,8 +181,8 @@ Two reports, because they attest to different builds. Each records its own
 
 | File | Build | Result |
 | --- | --- | --- |
-| `docs/webmcp-chrome-report.json` | this tree, via `npm run dev` | 12 tools native; 20 documented parameters delivered; polyfill fallback confirmed with the flag off |
-| `docs/webmcp-chrome-report.deployed.json` | the deployed build, before this rework | 12 tools native |
+| `docs/webmcp-chrome-report.json` | **deployed**, 2026-09-03 | 12 tools native; 20 of 20 documented parameters delivered; longest description 104 chars; polyfill fallback confirmed with the flag off |
+| `docs/webmcp-chrome-report.deployed.json` | the deployed build *before* this rework | 12 tools native |
 
 The report also records which optional fields a native client actually gets,
 because two of them decide where documentation can live. `inputSchema` arrives
@@ -168,7 +192,7 @@ itself into believing the descriptions were stripped. They are not; all 20
 arrive intact. `outputSchema` arrives for none, because it is an MCP-B
 extension the standard dictionary does not carry.
 
-Re-run it against production once this tree is deployed:
+Re-run it after any deploy:
 
 ```bash
 node tools/chrome-webmcp-check.mjs --url "https://multicom-web.pages.dev/?demo=1"

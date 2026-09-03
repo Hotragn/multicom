@@ -108,11 +108,13 @@ commander models, [TESTING.md](docs/TESTING.md) for the coverage map,
 [AGENT-DRILL.md](docs/AGENT-DRILL.md) for two real language-model agents working
 the incident unaided.
 
-**Status:** verified locally and against `wrangler dev`, including native WebMCP
-registration in Chrome. Not yet deployed — the live link above still serves the
-previous single-room build, which needs a private capability to approve. The
-unaided-agent criterion (SPEC §17.8) predates the rewritten tool descriptions
-and is due a re-run; see [AGENT-DRILL.md](docs/AGENT-DRILL.md).
+**Status:** deployed 2026-09-03 and verified against the live Workers. The link
+above serves this build: room `77a76fa0`, target `01495519`, both Durable Object
+migrations applied. A fresh unaided model has taken the commander seat,
+diagnosed the incident, chosen the correct fix and stopped at the human gate;
+what nobody has automated is a person clicking Approve, which is the gate
+working rather than a gap. See [TESTING.md](docs/TESTING.md) for what was run
+against production.
 
 ## License
 

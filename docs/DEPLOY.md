@@ -74,7 +74,49 @@ with migrations `v1` and `v2`. Applying a migration to a live Worker is one-way,
 and the `Room` class holds live room state at the moment of deploy. Deploy when
 no session is in progress.
 
+## The deploy of 2026-09-03
+
+Both Durable Object migrations are applied on the live room Worker. `v2` is
+`new_sqlite_classes = ["Lobby"]` — purely additive, no `deleted_classes` and no
+`renamed_classes` — so it created the new class and left every existing `Room`
+untouched. What a migration makes irreversible is the recorded tag, not any
+data. Old persisted rooms load unchanged because `roomId` and `selfServe` are
+both optional with server-side fallbacks.
+
+| Worker | Version | Bindings |
+| --- | --- | --- |
+| `multicom-storefront-api` | `01495519-5de3-4773-b806-694115c69755` | `SCENARIO` |
+| `multicom-room` | `77a76fa0-1106-44d8-b420-0e537ad260cf` | `ROOMS`, `LOBBY`, `TARGET_ORIGIN`, `ALLOWED_ORIGINS` |
+
+Deploying restarts isolates, so open WebSockets drop and reconnect with a new
+member id. That is a blip, not data loss — but it does mean deploying mid-run
+costs a judge their seat, so deploy when no session is in progress.
+
+Two things learned deploying it:
+
+- Run the Pages step **from the repo root**. `web/dist` is relative to the root,
+  and running it from `worker/` fails with `ENOENT ... worker\web\dist` after
+  the two Workers are already live.
+- Don't exercise the provisioning rate limit and then try to verify. The budget
+  is per address, so 30 test mints lock out `verify:prod` and `drill` — both
+  provision through the lobby — for the rest of the ten-minute window.
+
 ## Verifying a deployment
+
+Start with the read-only pass. It provisions nothing, so it costs no room
+budget and can be run as often as you like:
+
+```bash
+npm run smoke:prod
+```
+
+Nine checks: twelve tools registered, a live `wss` connection, real fault
+metrics, the visualization mounted, the onboarding tiers, the lobby at the bare
+URL, and no console errors.
+
+Then the two that provision rooms. Both were green against this deploy —
+32/32 and 34/34, results in [TESTING.md](TESTING.md#verified-against-production-2026-09-03).
+Between them they cost about four rooms of the thirty-per-window budget.
 
 ```bash
 npm run verify:prod
