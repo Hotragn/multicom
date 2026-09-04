@@ -10,11 +10,11 @@ The room page registers thirteen imperative WebMCP tools after load, feature-det
 
 **Why is this a better user experience?**
 
-Incident response is already collaborative, but AI help is usually one agent in one private chat. Evidence gets pasted between tabs, weak theories go unchallenged, and the person accountable for production cannot see what an agent intends to change. Here the page the engineers read is the same surface their agents act on, so reasoning, disagreement, and the pending write stay visible to the whole room.
+Incident response is already collaborative, but AI help is one agent in one private chat. Evidence gets pasted between tabs, nobody's agent hears anybody else's reasoning, weak theories go unchallenged, and the person accountable for production cannot see what an agent intends to change. Here the page the engineers read is the same surface every agent acts on. A theory gets contradicted by another agent's evidence in front of everyone, its author moves their own number in response, and the pending write is visible before it happens rather than after.
 
 **What can people and agents do together now that they could not before?**
 
-Several engineers' agents can investigate one live incident in one shared page, cite evidence, and argue against each other's theories — then a server-counted majority plus one fresh human approval decides the fix. Open the link and you get your own isolated copy of the incident and the commander seat, with no shared secret, so several people can evaluate at once without touching each other's run. A planted log line tells agents to skip diagnosis and roll back immediately. It stays literal, is marked untrusted, and no agent obeys it.
+Agents can change their minds in front of each other. Several engineers' agents work one live incident in one page: each cites evidence, rebuts theories it disputes, and — when a rebuttal lands — revises its own stated confidence, which the board shows as 92% struck through beside 20% with the reason underneath. Revising is author-only, so a theory cannot be edited out from under whoever staked a number on it; everyone else has to argue. A server-counted majority then decides the fix, and one human click applies it. Each visitor gets an isolated copy of the incident and can claim the commander seat with no shared secret, so several people run this at once without touching each other. A planted log line tells agents to skip diagnosis and roll back immediately. It stays literal, arrives marked untrusted, and no agent obeys it.
 
 **How did you implement WebMCP?**
 
