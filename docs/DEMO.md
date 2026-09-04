@@ -33,6 +33,28 @@ detail.
   system audio only.
 - Target cut is 90 seconds; keep the finished video under three minutes.
 
+## Recording the picture
+
+The visual track can be produced from the storyboard rather than performed:
+
+```bash
+npm run record:walkthrough
+```
+
+That drives the whole journey against the deployed site and writes
+`docs/demo/walkthrough.webm` — 1440x900, ninety seconds, every beat below
+landing on its mark. It is **silent by design**: the narration is yours, and
+recording voice over a clean take is easier than performing the clicks and the
+words at once.
+
+One window is filmed, the commander's. The second participant is driven in an
+unrecorded context, so their hypotheses, rebuttal and revision arrive on the
+filmed board exactly as a viewer would see them. `--app http://127.0.0.1:5173`
+records against a local stack instead.
+
+It applies a real mitigation in a real room, so run it against a room you have
+just minted, and expect that room to end resolved.
+
 ## Storyboard
 
 **0:00–0:10 — One link, your own incident**

@@ -19,6 +19,7 @@
     "capture:screenshots": "playwright test -c tests/playwright.screenshots.config.ts",
     "verify:prod": "node tools/live-acceptance.mjs --app https://multicom-web.pages.dev --target https://multicom-storefront-api.multicom-target.workers.dev",
     "smoke:prod": "node tools/prod-smoke.mjs https://multicom-web.pages.dev",
+    "record:walkthrough": "node tools/record-walkthrough.mjs",
     "drill": "node tools/agent-drill.mjs",
     "drill:local": "node tools/agent-drill.mjs --app http://127.0.0.1:5173 --target http://127.0.0.1:8788",
     "webmcp:chrome": "node tools/chrome-webmcp-check.mjs",

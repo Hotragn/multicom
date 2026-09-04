@@ -17,3 +17,7 @@ Thumbs.db
 
 # local commander capability written by tools/set-commander-token.mjs
 .commander-token
+
+# Generated demo footage. Regenerate with `npm run record:walkthrough`;
+# an 8 MB binary that changes on every run does not belong in history.
+docs/demo/
