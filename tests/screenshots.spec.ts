@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { INJECTION_TRAP_LINE } from "../shared/scenario";
 import { MINTED_ROOM_ID_PATTERN } from "../shared/tenancy";
 import { callTool, installWebMcpCapture, openRoom, waitForTools } from "./support/page-tools";
@@ -67,6 +67,43 @@ async function shoot(page: Page, name: string, dwellMs = 2_200): Promise<void> {
   // latency timeline have real shape rather than placeholder dashes.
   await page.waitForTimeout(dwellMs);
   await page.screenshot({ path: resolve(SHOT_DIR, `${name}.png`) });
+}
+
+/**
+ * Shoot the region one element occupies, rather than the whole viewport.
+ *
+ * Some claims live in small type. A struck-through confidence figure is a few
+ * pixels tall in a 1440x900 page shot, so a full-page capture cannot evidence
+ * it however carefully it is composed.
+ *
+ * This crops the page rather than calling `locator.screenshot()`, which waits
+ * for the element to be stable and never gets it: the board re-renders on the
+ * two-second status cadence, so the node is replaced out from under the wait.
+ * Cropping reads the box once and captures the page as it actually is.
+ */
+async function shootElement(
+  page: Page,
+  locator: Locator,
+  name: string,
+  dwellMs = 1_200,
+  pad = 12,
+): Promise<void> {
+  await locator.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(dwellMs);
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${name}: the element has no box, so it cannot be shot`);
+  const viewport = page.viewportSize();
+  const clip = {
+    x: Math.max(0, box.x - pad),
+    y: Math.max(0, box.y - pad),
+    width: box.width + pad * 2,
+    height: box.height + pad * 2,
+  };
+  if (viewport) {
+    clip.width = Math.min(clip.width, viewport.width - clip.x);
+    clip.height = Math.min(clip.height, viewport.height - clip.y);
+  }
+  await page.screenshot({ path: resolve(SHOT_DIR, `${name}.png`), clip, animations: "disabled" });
 }
 
 test("captures the lobby a judge lands on", async ({ browser }) => {
@@ -142,9 +179,17 @@ test("captures the war room, the debate, the approval and the resolution", async
       confidence: 0.1,
       because: "The timeline predates the flag — Priya is right, this is not causal.",
     });
-    await expect(
-      responder.locator('[data-testid="hypothesis-card"][data-red-herring="true"]'),
-    ).toContainText("10%");
+    const revisedCard = responder.locator(
+      '[data-testid="hypothesis-card"][data-red-herring="true"]',
+    );
+    await expect(revisedCard).toContainText("10%");
+    // Both numbers survive the revision, which is the whole point: a reader can
+    // judge the size of the move. Assert each separately so a regression that
+    // drops the opening figure fails here rather than producing a screenshot
+    // that quietly stops evidencing the claim the README leads with.
+    await expect(revisedCard.locator(".mc-confidence__from")).toHaveText("35%");
+    await expect(revisedCard.locator(".mc-confidence__revision")).toContainText("revised down");
+    await shootElement(responder, revisedCard, "12-revised-confidence");
 
     const mitigation = await callTool<{ mitigationId: string }>(responder, "propose_mitigation", {
       hypothesisId: real.hypothesisId,

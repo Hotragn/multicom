@@ -39,6 +39,8 @@ figure struck through, the new one beside it, the reason underneath. Revising is
 author-only, so a theory cannot be edited out from under whoever staked a number
 on it. Everyone else has to argue.
 
+![A theory marked Challenged: its author's confidence shown as 35% struck through beside 10%, with "Arjun revised down: the timeline predates the flag" underneath, above the cited evidence and the rebuttal that moved it](docs/screenshots/12-revised-confidence.png)
+
 **The debate is the product.** Hypotheses carry cited evidence, take rebuttals,
 and win or lose a majority vote with stated reasons — the red herring visibly loses.
 
@@ -72,8 +74,7 @@ fallback and no iframes:
 
 Every call travels the room's WebSocket with a request ID. The server owns
 voting, approval, idempotency and the action allowlist — three fixed actions, so
-an agent cannot invent a production change. Log results are marked untrusted and
-every result stays under 2 KB.
+an agent cannot invent a change. Log results are untrusted; results stay under 2 KB.
 
 ```mermaid
 flowchart LR
@@ -110,9 +111,8 @@ origin and tenant gates. [docs/TESTING.md](docs/TESTING.md) maps the coverage.
 - [VISUAL-SYSTEM.md](docs/VISUAL-SYSTEM.md) — the design system
 
 **Status:** deployed 2026-09-03 — room `c6686ced`, target `f70f44ab`, Pages
-`index-DKQrjK_5.js`. Against this exact bundle: smoke 9/9, live acceptance
-32/32, multi-agent drill green, 13 tools native in Chrome, and a bystander room
-still at 23% while the worked room recovered to 1%.
+`index-DKQrjK_5.js`. Against this bundle: smoke 9/9, live acceptance 32/32,
+drill green, 13 tools native in Chrome, a bystander room still at 23%.
 
 ## License
 

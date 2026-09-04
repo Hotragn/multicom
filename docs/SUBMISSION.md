@@ -104,6 +104,7 @@ production UI through the room protocol. Files live in `docs/screenshots/`.
 | 9 | `09-untrusted-literal.png` | The injection-trap log line rendered as literal text |
 | 10 | `10-mobile.png` | The room at 390 px, where the layout becomes tabbed rather than stacked |
 | 11 | `11-vote-rationale.png` | A stated reason attached to a vote, so an objection is more than a bare no |
+| 12 | `12-revised-confidence.png` | The beat the project leads with: an author moving their own number in public — 35% struck through beside 10%, with the reason and the rebuttal that caused it |
 
 Two more are evidence rather than walkthrough steps, so they sit outside the
 numbered sequence and each regenerates from its own tool:
