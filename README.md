@@ -66,7 +66,7 @@ Node.js 22+, npm, and a platform Cloudflare's local `workerd` supports.
 npm test
 ```
 
-Typecheck across five projects, 46 unit tests, then 25 Chromium journeys — 71
+Typecheck across five projects, 47 unit tests, then 26 Chromium journeys — 73
 checks, failing fast. Against the real Workers instead:
 
 ```bash

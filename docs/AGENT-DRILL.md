@@ -60,12 +60,17 @@ The same real Workers, driven without agents, as a repeatable gate:
 node tools/live-acceptance.mjs --commander "$COMMANDER_TOKEN"
 ```
 
-Eighteen checks: registration, refusal before joining, the commander seat, the
+Thirty-two checks: registration, refusal before joining, the commander seat, the
 untrusted trap line, the fault, the vote gate, invented actions, vote rationales,
 the approval gate, the dialog naming a server-derived action, a real click on the
-real dialog, apply against the real target, single-use approval, and recovery in
-every connected browser. It re-arms the fault first, because the scripted
-incident is one global state and a previous run leaves the service healthy.
+real dialog, apply against the real target, single-use approval, recovery in
+every connected browser, the judge console's rubric, and five fail-closed origin
+and tenant checks made straight against the Workers.
+
+By default it mints its own room through the lobby, so there is nothing to
+re-arm: a new room's scenario is armed by construction, and one run cannot leave
+another run's service healthy. `--room` opts into the curated room, which does
+share one scenario and does get re-armed first.
 
 Point it at a deployed build with `--app` and `--target`.
 

@@ -66,7 +66,7 @@ Codex helped turn the initial specification into frozen shared contracts, then b
 
 ## Testing
 
-Run `npm test`. The command checks TypeScript and 71 automated behaviors: 46 unit tests across the UI, WebMCP client, room, and target, then 25 Chromium journeys. A further 32 checks run against the real Workers via `tools/live-acceptance.mjs`. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room isolation, self-serve commander, demo mode, and recovery in every tab.
+Run `npm test`. The command checks TypeScript and 73 automated behaviors: 47 unit tests across the UI, WebMCP client, room, and target, then 26 Chromium journeys. A further 32 checks run against the real Workers via `tools/live-acceptance.mjs`. The browser suite uses isolated contexts and covers real-time propagation, injection-safe rendering, vote and approval gates, expiry, single-use replay, room isolation, self-serve commander, demo mode, and recovery in every tab.
 
 ## Judging fit
 
@@ -132,7 +132,7 @@ Two limitations from the earlier build are now fixed rather than documented. The
 
 ## Readiness
 
-- [x] Functional project and automated test suite (71 checks)
+- [x] Functional project and automated test suite (73 checks)
 - [x] MIT license and public repository remote
 - [x] Professional README, security notes, and demo plan
 - [x] Live Cloudflare Workers (health endpoints and production WebSocket verified)
