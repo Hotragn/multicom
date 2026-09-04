@@ -119,7 +119,7 @@ that go stale silently: a screenshot captioned "the deployed build" keeps making
 that claim after the next deploy, which is why each now has a command that
 recaptures it rather than being taken by hand.
 
-The twelfth-tool surface is evidenced by `docs/webmcp-chrome-report.json`
+The thirteen-tool surface is evidenced by `docs/webmcp-chrome-report.json`
 rather than a screenshot of a client menu: it records the tool names, the
 longest description, and the polyfill-versus-native A/B, and it regenerates
 from `tools/chrome-webmcp-check.mjs`.

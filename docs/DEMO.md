@@ -55,6 +55,9 @@ records against a local stack instead.
 It applies a real mitigation in a real room, so run it against a room you have
 just minted, and expect that room to end resolved.
 
+The words to read over it are in [NARRATION.md](NARRATION.md), sized to the beats
+below and including an eight-second cold open this storyboard does not have.
+
 ## Storyboard
 
 **0:00–0:10 — One link, your own incident**
