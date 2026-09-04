@@ -151,7 +151,7 @@ sequenceDiagram
   seconds. Verification is part of the game.
 - Every event lands in the activity log with a name and timestamp.
 
-## 9. Tools (register exactly these 11, imperative API)
+## 9. Tools (register exactly these 13, imperative API)
 
 Register on the room page after load. Feature-detect
 `navigator.modelContext` and `document.modelContext` (the Official Rules'
@@ -198,25 +198,47 @@ Challenge an existing hypothesis with contradicting evidence.
 Params: `hypothesisId`, `evidence` (string).
 Returns: updates the hypothesis with a rebuttal note.
 
-### 9.8 propose_mitigation
+### 9.8 revise_hypothesis
+Move your own hypothesis's confidence as evidence lands. **Author-only**: anyone
+may contradict a theory with `counter_hypothesis`, but only the member who
+staked a number on it may restate that number, so a board cannot be edited out
+from under its author. A non-author gets `not_author`.
+Params: `hypothesisId`, `confidence` (0–1), `because` (optional, ≤240 chars).
+Returns: `{kind:'revision', hypothesisId, confidence, openedAt}`. The opening
+confidence is preserved in `openedAt` rather than overwritten, and the room
+renders both — "92%, then 20% once the timeline landed" is the visible evidence
+that a mind changed, which a single current number cannot show.
+Added 2026-09-03; see §19.8.
+
+### 9.9 propose_mitigation
 Propose a fix for a hypothesis. Action must come from the action library.
 Params: `hypothesisId`, `actionId`, `blastRadius` (one sentence: what could
 this break).
 Returns: mitigation id; opens a vote.
 
-### 9.9 vote
-Vote on a hypothesis (agree/disagree) or a mitigation (yes/no).
+### 9.10 vote
+Vote on a hypothesis (agree/disagree) or a mitigation (yes/no). Voting again
+replaces your previous choice.
 Params: `targetId`, `choice` ("yes" | "no").
 Returns: tally and whether the target passed.
 
-### 9.10 request_human_confirm
+### 9.11 explain_vote
+Say why you voted as you did, so an objection is more than a bare "no". Refuses
+with `no_vote` unless you have already voted on that target, which keeps it one
+narrow job rather than a chat channel. One standing reason per member per
+target, replaced if you explain again.
+Params: `targetId`, `rationale` (≤240 chars).
+Returns: `{kind:'rationale', targetId, count}` — every stated reason on that
+target, not just yours.
+
+### 9.12 request_human_confirm
 Ask your commander to approve applying a mitigation. Waits for the click.
 Params: `mitigationId`. The server derives the action summary from the passed
 mitigation and the fixed action library so free-form text cannot change what
 the commander is approving.
 Returns: `approved` (boolean).
 
-### 9.11 apply_mitigation
+### 9.13 apply_mitigation
 Apply a passed, human-approved mitigation to storefront-api.
 Params: `actionId` (from the library below).
 Returns: applied status + a fresh service snapshot.
@@ -265,7 +287,7 @@ here and in each tool's description.
 Each definition also carries an `outputSchema`, but do not rely on an agent
 seeing it: `outputSchema` is an MCP-B extension and is not part of the standard
 `ModelContextTool` dictionary, so Chrome's native surface drops it — verified,
-`getTools()` returns none of the twelve carrying one. The description is
+`getTools()` returns none of the thirteen carrying one. The description is
 therefore the load-bearing statement, and the schema is a machine-readable
 duplicate for clients that do read it.
 
@@ -577,7 +599,7 @@ Added to §17:
 
 11. An agent holding the commander seat cannot approve its own write. With one
     browser, one agent, and no human interaction, `apply_mitigation` never
-    succeeds; exercising all eleven other tools while a confirmation is pending
+    succeeds; exercising every other tool on the surface while a confirmation is pending
     does not move the gate; only a click on Approve does.
 12. Every manual operator control produces the same server effect as the
     equivalent tool call, and none bypasses join, vote, approval, or the
@@ -594,7 +616,8 @@ Added to §17:
     the 3D chunk blocked.
 
 Criterion 7 now reads off `TOOL_NAMES` rather than a literal: same names, same input
-schemas. Only the twelve description strings changed, to state the result
+schemas. Only the description strings changed — all twelve, as the surface
+then stood — to state the result
 envelope (§10.1), plus an additive `outputSchema` per tool.
 
 ### 19.7 Amendment: the descriptions had to be readable by an agent
@@ -626,7 +649,8 @@ gate.
 characters by §9 — enough to name the result envelope and no more. JSON Schema
 `description` keys inside `inputSchema` have no such budget, are part of the
 standard dictionary, and are verified to reach a native client: Chrome delivers
-all twelve `inputSchema` values with all 20 parameter descriptions intact
+all `inputSchema` values with every parameter description intact (twelve and
+20 at that date; thirteen and 23 today)
 (`docs/webmcp-chrome-report.json`). It arrives as a JSON string rather than an
 object, which is worth knowing when probing it.
 
@@ -693,3 +717,34 @@ The vote gates whether a fix has support, not which fix wins; the approval
 dialog names one specific action with its blast radius, and the human chooses.
 Two supported proposals with a person deciding between them is what an incident
 looks like.
+
+### 19.9 Amendment: a theory you can change your mind about (2026-09-03)
+
+A hypothesis was immutable once posted. `title`, `evidence` and `confidence`
+were set at creation and never updated, so the sequence a judge watched was:
+someone posts a theory at 92%, someone else demolishes it with timeline
+evidence, and the number on screen still reads 92%. Votes and stated reasons
+were already revisable; the theory itself was not.
+
+That was the gap between "several agents on one page" and "several agents who
+argue". §5 and the investigation flow both already described *revised
+confidence* as a step; it had been designed and never built.
+
+**`revise_hypothesis`** (§9.8) closes it. Author-only, because anyone may
+contradict a theory but only the person who staked a number on it may restate
+that number. The opening confidence is preserved in `openedAt` rather than
+overwritten, so the room can render the movement rather than just the current
+value — both figures, side by side, with the author's stated reason.
+
+This is the fourth amendment to frozen `shared/`, and the first to add a tool
+rather than change a string. `TOOL_NAMES` goes to thirteen, `ClientMessage`
+gains `revise`, `ToolResultData` gains `{kind:'revision'}`, and `Hypothesis`
+gains the two optional fields. Optional on purpose: a room persisted before this
+change loads without migration, and a hypothesis nobody has revised carries
+neither field.
+
+Acceptance: an author can move their own confidence and both numbers reach every
+other browser; a non-author gets `not_author` and the number does not move; a
+resolved room refuses it like any other write. Verified in the suite and against
+production — 13 tools registering natively in Chrome, 23 of 23 parameter
+descriptions delivered.

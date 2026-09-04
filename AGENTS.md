@@ -48,15 +48,35 @@ Do not mark work complete by description. Mark it complete by gate.
      calls to it, the target Worker keys its scenario by it — so the header
      name, the room-id pattern, and the minted-id shape need one source of
      truth. Purely additive; nothing existing changed.
-   - `shared/tools.ts`: the twelve **description strings** changed, to state
+   - `shared/tools.ts`: the **description strings** changed, to state
      each tool's exact result envelope (`SPEC.md` §10.1). The payload key
      differs per result variant, and an agent that guessed wrong got
      `undefined` with no error. No tool name, input schema, action-library
      entry, or message type changed.
 
-   Still frozen: `shared/ws-messages.ts` and `shared/scenario.ts`. The result
-   union's shapes were deliberately left alone — renaming payload keys would
-   have rippled through five workspaces and two scripts for a cosmetic gain.
+   Amended a third time, with written human authorization, on 2026-09-03, to add
+   the thirteenth tool — `revise_hypothesis`, recorded in `SPEC.md` §19.9. This
+   is the first amendment to add a tool rather than change a string, and the
+   first to touch `shared/ws-messages.ts`:
+
+   - `shared/tools.ts`: `TOOL_NAMES` goes to thirteen, plus the matching
+     `ToolParams` entry and description.
+   - `shared/ws-messages.ts`: `ClientMessage` gains `revise`, `ToolResultData`
+     gains `{kind:'revision'}`, and `Hypothesis` gains two **optional** fields —
+     `openedAt` (the confidence it was first posted at) and `revisedBecause`.
+     Optional on purpose: a room persisted before this change loads without
+     migration, and an unrevised hypothesis carries neither.
+
+   The rule it encodes: **revision is author-only**. Anyone may contradict a
+   theory with `counter_hypothesis`; only the member who staked a number on it
+   may restate that number, so a board cannot be edited out from under its
+   author. A non-author gets `not_author`. The opening confidence is kept rather
+   than overwritten, because both numbers together are the evidence that a mind
+   changed.
+
+   Still frozen: `shared/scenario.ts`. The result union's payload keys were
+   deliberately left alone — renaming them would have rippled through five
+   workspaces and two scripts for a cosmetic gain.
 2. Stay in your lane. Each task owns specific directories (see Repo map).
    Never edit another module's directory.
 3. WebMCP imperative API only. Feature-detect `navigator.modelContext` and

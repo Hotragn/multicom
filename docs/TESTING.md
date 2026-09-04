@@ -163,7 +163,7 @@ text. No language model reasons about anything. What this proves is that the
 protocol, the gates and the interface hold up with several participants acting
 concurrently. What it does not prove is that a model can work the incident from
 the tool surface alone; that is what `AGENT-DRILL.md` is for, and it needs
-re-running after any change to the twelve tool descriptions. Every result is asserted strictly against the envelope in
+re-running after any change to the tool descriptions. Every result is asserted strictly against the envelope in
 SPEC.md §10.1 — the first version of this script papered over the payload keys
 with `??` chains and would have passed against a completely different shape.
 
@@ -200,7 +200,7 @@ Two reports, because they attest to different builds. Each records its own
 
 The report also records which optional fields a native client actually gets,
 because two of them decide where documentation can live. `inputSchema` arrives
-for all twelve — as a JSON *string*, which is worth knowing: reading it as an
+for all thirteen — as a JSON *string*, which is worth knowing: reading it as an
 object reports zero documented parameters and is how this probe first talked
 itself into believing the descriptions were stripped. They are not; all 20
 arrive intact. `outputSchema` arrives for none, because it is an MCP-B

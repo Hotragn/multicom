@@ -42,7 +42,7 @@ The demo incident is a failing storefront API with a one-connection database poo
 
 ## Why WebMCP matters here
 
-WebMCP is not an add-on to the demo; it is the product boundary. The same page engineers use is the surface their agents use. Twelve imperative tools register after page load, work through one shared WebSocket, and return compact structured results. With no extension and no copied credentials, the agent can observe and coordinate inside the current room context.
+WebMCP is not an add-on to the demo; it is the product boundary. The same page engineers use is the surface their agents use. Thirteen imperative tools register after page load, work through one shared WebSocket, and return compact structured results. With no extension and no copied credentials, the agent can observe and coordinate inside the current room context.
 
 ## Key features
 

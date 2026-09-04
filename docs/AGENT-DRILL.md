@@ -9,7 +9,8 @@ So this drill puts real language-model agents in the room, tells them nothing
 about the incident, and watches what they do.
 
 > **Stale as of the 2026-09-03 rework, and worth re-running.** The findings
-> below came from the previous build. All twelve tool descriptions were
+> below came from the previous build, when the surface was twelve tools. All
+> of those descriptions were
 > rewritten since — they now name each result envelope — and the descriptions
 > are precisely what this drill exercises: they are the only thing an unaided
 > agent reads to decide what to call. `tools/agent-drill.mjs` is a *scripted*

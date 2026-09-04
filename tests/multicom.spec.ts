@@ -1211,6 +1211,9 @@ test("an agent holding the commander seat still cannot approve its own write", a
         confidence: 0.1,
       },
       counter_hypothesis: { hypothesisId, evidence: "Probing the approval gate." },
+      // This page authored the hypothesis, so the probe is a real revision
+      // rather than an input-validation bounce.
+      revise_hypothesis: { hypothesisId, confidence: 0.4, because: "Probing the approval gate." },
       propose_mitigation: {
         hypothesisId,
         actionId: "rollback:deploy-1f3a",
