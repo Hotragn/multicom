@@ -31,11 +31,6 @@ vote on a fix, and leave the final simulated action to a human commander.
 
 https://github.com/user-attachments/assets/6cf39f28-a825-4960-8d69-293822e95c06
 
-
-<a href="https://multicom-web.pages.dev/"><img src="docs/screenshots/00-demo-preview.gif" alt="Clips from the demo: two browsers on one board; an agent revising its own confidence from 35% to 10% after a rebuttal; the commander's approval dialog and the click; the error rate falling to 1% in both windows" width="100%"></a>
-
-<sub>Clips from the 2:48 narrated demo, recorded on the live September 3 build: two browsers share one board · an author moves its own number after a rebuttal · nothing applies until a person clicks Approve · both windows recover together. Click to open the live app.</sub>
-
 The synthetic `storefront-api` is failing at 23%. The cause is buried in logs that
 include one line telling agents to skip diagnosis and roll back immediately.
 
