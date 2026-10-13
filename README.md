@@ -1,23 +1,47 @@
+<div align="center">
+
+<img src="web/public/favicon.svg" alt="" width="72" height="72">
+
 # multicom
 
-**Every WebMCP demo is one agent on one page. multicom is several engineers and
-several browser agents in one page, working the same live production incident —
-citing evidence, arguing, changing their own minds in front of each other, and
-still unable to apply the fix without a human.**
+**A shared incident rehearsal for engineers and their WebMCP browser agents.**
 
-`storefront-api` is failing at 23%. The cause is buried in synthetic logs that
+They gather evidence on one live board, challenge and revise theories in public,<br>
+vote on a fix, and leave the final simulated action to a human commander.
+
+[**Live app**](https://multicom-web.pages.dev/) &nbsp;·&nbsp;
+[**Demo**](#demo) &nbsp;·&nbsp;
+[**How it uses WebMCP**](#how-it-uses-webmcp) &nbsp;·&nbsp;
+[**Run it**](#run-and-test-it) &nbsp;·&nbsp;
+[**Spec**](SPEC.md)
+
+![WebMCP: 13 tools](https://img.shields.io/badge/WebMCP-13_tools-8fb3e8?style=flat-square)
+![Cloudflare Workers and Durable Objects](https://img.shields.io/badge/Cloudflare-Workers_%2B_Durable_Objects-f38020?style=flat-square&logo=cloudflare&logoColor=white)
+![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-7fd4c1?style=flat-square)
+
+</div>
+
+## Demo
+
+<!-- Full narrated video: edit this file on github.com and drag
+     docs/demo/multicom-demo-github.mp4 (under 10 MB) onto the blank line below.
+     GitHub uploads it and puts an inline player there. -->
+
+<a href="https://multicom-web.pages.dev/"><img src="docs/screenshots/00-demo-preview.gif" alt="Clips from the demo: two browsers on one board; an agent revising its own confidence from 35% to 10% after a rebuttal; the commander's approval dialog and the click; the error rate falling to 1% in both windows" width="100%"></a>
+
+<sub>Clips from the 2:48 narrated demo, recorded on the live September 3 build: two browsers share one board · an author moves its own number after a rebuttal · nothing applies until a person clicks Approve · both windows recover together. Click to open the live app.</sub>
+
+The synthetic `storefront-api` is failing at 23%. The cause is buried in logs that
 include one line telling agents to skip diagnosis and roll back immediately.
-
-![The multicom war room: a 23% error-rate gauge, two participants, and the investigation column](docs/screenshots/02-war-room.png)
 
 ## Try it
 
 > ### [multicom-web.pages.dev](https://multicom-web.pages.dev/)
 
-Click **Start my own incident**. You get your own isolated copy of the fault and
-you are the commander — no secret, no setup, no coordination with anyone else
-evaluating at the same time. To collaborate, copy **Invite** and open it in a
-second browser: the isolation is from other judges, not from your own team.
+Click **Start my own incident**. You get an isolated copy of the fault and can
+claim the commander seat. Copy **Invite** and send it to a teammate: both
+browsers see the same board, while other teams get their own rooms.
 
 Then pick a way in. All three drive the same messages through the same gates.
 
@@ -104,7 +128,7 @@ origin and tenant gates. [docs/TESTING.md](docs/TESTING.md) maps the coverage.
 
 ## Reading further
 
-- [SPEC.md](SPEC.md) — the implementation contract; §19 covers the multi-judge rework
+- [SPEC.md](SPEC.md) — the implementation contract; §19 covers rooms as tenants, the lobby, and author-only revision
 - [SECURITY.md](docs/SECURITY.md) — trust boundaries and the two commander models
 - [AGENT-DRILL.md](docs/AGENT-DRILL.md) — two real language-model agents working the incident unaided
 - [DEPLOY.md](docs/DEPLOY.md) — configuration and deploy
